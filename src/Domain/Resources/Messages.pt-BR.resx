@@ -1,0 +1,514 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="OperationSuccessful" xml:space="preserve">
+    <value>Operação realizada com sucesso</value>
+  </data>
+  <data name="SavedSuccessfully" xml:space="preserve">
+    <value>Dados salvos com sucesso</value>
+  </data>
+  <data name="CreatedSuccessfully" xml:space="preserve">
+    <value>Registro criado com sucesso</value>
+  </data>
+  <data name="UpdatedSuccessfully" xml:space="preserve">
+    <value>Registro atualizado com sucesso</value>
+  </data>
+  <data name="DeletedSuccessfully" xml:space="preserve">
+    <value>Registro excluído com sucesso</value>
+  </data>
+  <data name="NotFound" xml:space="preserve">
+    <value>Registro não encontrado</value>
+  </data>
+  <data name="InvalidOperation" xml:space="preserve">
+    <value>Operação inválida</value>
+  </data>
+  <data name="UnexpectedError" xml:space="preserve">
+    <value>Ocorreu um erro inesperado</value>
+  </data>
+  <data name="DatabaseError" xml:space="preserve">
+    <value>Erro ao acessar o banco de dados</value>
+  </data>
+  <data name="UnauthorizedAccess" xml:space="preserve">
+    <value>Acesso não autorizado</value>
+  </data>
+  <data name="ForbiddenAccess" xml:space="preserve">
+    <value>Você não tem permissão para acessar este recurso</value>
+  </data>
+  <data name="RequiredField" xml:space="preserve">
+    <value>O campo {0} é obrigatório</value>
+    <comment>Use com string.Format: _localizer["RequiredField", "Nome"]</comment>
+  </data>
+  <data name="InvalidEmail" xml:space="preserve">
+    <value>Endereço de email inválido</value>
+  </data>
+  <data name="InvalidFormat" xml:space="preserve">
+    <value>Formato inválido para {0}</value>
+  </data>
+  <data name="MinLength" xml:space="preserve">
+    <value>{0} deve ter no mínimo {1} caracteres</value>
+  </data>
+  <data name="MaxLength" xml:space="preserve">
+    <value>{0} não pode exceder {1} caracteres</value>
+  </data>
+  <data name="DuplicateEntry" xml:space="preserve">
+    <value>Já existe um registro com este {0}</value>
+  </data>
+  <data name="InvalidValue" xml:space="preserve">
+    <value>Valor inválido para {0}</value>
+  </data>
+  <data name="MustBeGreaterThan" xml:space="preserve">
+    <value>{0} deve ser maior que {1}</value>
+  </data>
+  <data name="MustBeLessThan" xml:space="preserve">
+    <value>{0} deve ser menor que {1}</value>
+  </data>
+  <data name="InvalidRange" xml:space="preserve">
+    <value>{0} deve estar entre {1} e {2}</value>
+  </data>
+  <data name="Status_Created" xml:space="preserve">
+    <value>Status criado com sucesso</value>
+  </data>
+  <data name="Status_Updated" xml:space="preserve">
+    <value>Status atualizado com sucesso</value>
+  </data>
+  <data name="Status_Deleted" xml:space="preserve">
+    <value>Status excluído com sucesso</value>
+  </data>
+  <data name="Status_NotFound" xml:space="preserve">
+    <value>Status não encontrado</value>
+  </data>
+  <data name="Status_CreateError" xml:space="preserve">
+    <value>Erro ao criar status</value>
+  </data>
+  <data name="Status_UpdateError" xml:space="preserve">
+    <value>Erro ao atualizar status</value>
+  </data>
+  <data name="Status_DeleteError" xml:space="preserve">
+    <value>Erro ao deletar status</value>
+  </data>
+  <data name="Status_NameRequired" xml:space="preserve">
+    <value>Nome é obrigatório</value>
+  </data>
+  <data name="Status_NameMaxLength" xml:space="preserve">
+    <value>Nome não pode ter mais de 200 caracteres</value>
+  </data>
+  <data name="Status_ScopeRequired" xml:space="preserve">
+    <value>Escopo é obrigatório</value>
+  </data>
+  <data name="Status_ScopeMaxLength" xml:space="preserve">
+    <value>Escopo não pode ter mais de 100 caracteres</value>
+  </data>
+  <data name="Status_DescriptionMaxLength" xml:space="preserve">
+    <value>Descrição não pode ter mais de 500 caracteres</value>
+  </data>
+  <data name="Status_IdRequired" xml:space="preserve">
+    <value>Id é obrigatório</value>
+  </data>
+  <data name="Status_NameDuplicate" xml:space="preserve">
+    <value>Já existe um status com este nome</value>
+  </data>
+  <data name="Status_InUse" xml:space="preserve">
+    <value>Não é possível excluir o status pois está em uso</value>
+  </data>
+  <data name="Status_Activated" xml:space="preserve">
+    <value>Status ativado</value>
+  </data>
+  <data name="Status_Deactivated" xml:space="preserve">
+    <value>Status desativado</value>
+  </data>
+  <data name="Client_Created" xml:space="preserve">
+    <value>Cliente criado com sucesso</value>
+  </data>
+  <data name="Client_Updated" xml:space="preserve">
+    <value>Cliente atualizado com sucesso</value>
+  </data>
+  <data name="Client_Deleted" xml:space="preserve">
+    <value>Cliente excluído com sucesso</value>
+  </data>
+  <data name="Client_NotFound" xml:space="preserve">
+    <value>Cliente não encontrado</value>
+  </data>
+  <data name="Client_NameRequired" xml:space="preserve">
+    <value>Nome do cliente é obrigatório</value>
+  </data>
+  <data name="Client_EmailDuplicate" xml:space="preserve">
+    <value>Já existe um cliente com este email</value>
+  </data>
+  <data name="Auth_LoginSuccessful" xml:space="preserve">
+    <value>Login realizado com sucesso</value>
+  </data>
+  <data name="Auth_InvalidCredentials" xml:space="preserve">
+    <value>Email ou senha inválidos</value>
+  </data>
+  <data name="Auth_AccountLocked" xml:space="preserve">
+    <value>Conta bloqueada. Por favor, tente novamente mais tarde</value>
+  </data>
+  <data name="Auth_EmailNotConfirmed" xml:space="preserve">
+    <value>Email não confirmado. Por favor, verifique sua caixa de entrada</value>
+  </data>
+  <data name="Auth_RegistrationSuccessful" xml:space="preserve">
+    <value>Cadastro realizado com sucesso. Por favor, verifique seu email para confirmar sua conta</value>
+  </data>
+  <data name="Auth_EmailConfirmed" xml:space="preserve">
+    <value>Email confirmado com sucesso</value>
+  </data>
+  <data name="Auth_InvalidToken" xml:space="preserve">
+    <value>Token inválido ou expirado</value>
+  </data>
+  <data name="Auth_PasswordResetSent" xml:space="preserve">
+    <value>Instruções de redefinição de senha enviadas para seu email</value>
+  </data>
+  <data name="Auth_PasswordResetSuccessful" xml:space="preserve">
+    <value>Senha redefinida com sucesso</value>
+  </data>
+  <data name="Auth_PasswordChanged" xml:space="preserve">
+    <value>Senha alterada com sucesso</value>
+  </data>
+  <data name="Auth_InvalidPassword" xml:space="preserve">
+    <value>Senha atual incorreta</value>
+  </data>
+  <data name="Auth_WeakPassword" xml:space="preserve">
+    <value>A senha não atende aos requisitos de segurança</value>
+  </data>
+  <data name="Auth_UserAlreadyExists" xml:space="preserve">
+    <value>Já existe um usuário com este email</value>
+  </data>
+  <data name="Auth_UserNotFound" xml:space="preserve">
+    <value>Usuário não encontrado</value>
+  </data>
+  <data name="Auth_InvalidData" xml:space="preserve">
+    <value>Dados inválidos</value>
+  </data>
+  <data name="Auth_EmailNotConfirmedBeforeLogin" xml:space="preserve">
+    <value>Confirme seu e-mail antes de fazer login</value>
+  </data>
+  <data name="Auth_EmailAlreadyRegistered" xml:space="preserve">
+    <value>E-mail já cadastrado em nossa plataforma, caso não lembre sua senha utilize a ferramenta de Esqueci minha senha</value>
+  </data>
+  <data name="Auth_EmailNotConfirmedBeforePasswordRecovery" xml:space="preserve">
+    <value>Confirme seu e-mail antes de recuperar a senha</value>
+  </data>
+  <data name="Auth_PasswordRecoveryLinkSent" xml:space="preserve">
+    <value>Link de recuperação de senha enviado no e-mail</value>
+  </data>
+  <data name="Auth_InvalidEmailConfirmation" xml:space="preserve">
+    <value>Confirmação de Email inválida</value>
+  </data>
+  <data name="Auth_RefreshTokenInvalid" xml:space="preserve">
+    <value>Refresh token inválido</value>
+  </data>
+  <data name="Auth_RefreshTokenExpired" xml:space="preserve">
+    <value>Refresh token expirado, inválido ou revogado</value>
+  </data>
+  <data name="Auth_ExternalAuthFailed" xml:space="preserve">
+    <value>Falha ao autenticar usuário externo</value>
+  </data>
+  <data name="Auth_ExternalProviderEmailNotFound" xml:space="preserve">
+    <value>Não foi possível obter o e-mail do provedor externo</value>
+  </data>
+  <data name="Auth_OldUserCleanupFailed" xml:space="preserve">
+    <value>Falha ao limpar usuário antigo</value>
+  </data>
+  <data name="Auth_EmailRequired" xml:space="preserve">
+    <value>O campo 'E-mail' é obrigatório</value>
+  </data>
+  <data name="Auth_EmailInvalid" xml:space="preserve">
+    <value>E-mail inválido</value>
+  </data>
+  <data name="Auth_PasswordRequired" xml:space="preserve">
+    <value>O campo 'Senha' é obrigatório</value>
+  </data>
+  <data name="Auth_PasswordMinLength" xml:space="preserve">
+    <value>A senha deve ter no mínimo 6 caracteres</value>
+  </data>
+  <data name="Auth_ConfirmPasswordRequired" xml:space="preserve">
+    <value>O campo 'Confirmação de senha' é obrigatório</value>
+  </data>
+  <data name="Auth_PasswordsMismatch" xml:space="preserve">
+    <value>As senhas não coincidem</value>
+  </data>
+  <data name="Auth_TokenRequired" xml:space="preserve">
+    <value>Token é obrigatório</value>
+  </data>
+  <data name="Auth_NewPasswordRequired" xml:space="preserve">
+    <value>O campo 'Nova senha' é obrigatório</value>
+  </data>
+  <data name="Auth_NewPasswordMinLength" xml:space="preserve">
+    <value>A nova senha deve ter no mínimo 6 caracteres</value>
+  </data>
+  <data name="Auth_UserIdRequired" xml:space="preserve">
+    <value>UserId é obrigatório</value>
+  </data>
+  <data name="Auth_UserIdInvalid" xml:space="preserve">
+    <value>UserId inválido</value>
+  </data>
+  <data name="Auth_RefreshTokenRequired" xml:space="preserve">
+    <value>Refresh token é obrigatório</value>
+  </data>
+  <data name="Auth_ProviderRequired" xml:space="preserve">
+    <value>Provider é obrigatório</value>
+  </data>
+  <data name="Auth_AuthResultRequired" xml:space="preserve">
+    <value>Resultado de autenticação é obrigatório</value>
+  </data>
+  <data name="LogError_Created" xml:space="preserve">
+    <value>Erro registrado com sucesso</value>
+  </data>
+  <data name="LogError_Updated" xml:space="preserve">
+    <value>Log de erro atualizado com sucesso</value>
+  </data>
+  <data name="LogError_Deleted" xml:space="preserve">
+    <value>Log de erro excluído com sucesso</value>
+  </data>
+  <data name="LogError_NotFound" xml:space="preserve">
+    <value>Log de erro não encontrado</value>
+  </data>
+  <data name="LogError_CreateError" xml:space="preserve">
+    <value>Erro ao criar log de erro</value>
+  </data>
+  <data name="LogError_UpdateError" xml:space="preserve">
+    <value>Erro ao atualizar log de erro</value>
+  </data>
+  <data name="LogError_DeleteError" xml:space="preserve">
+    <value>Erro ao deletar log de erro</value>
+  </data>
+  <data name="LogError_ErrorRequired" xml:space="preserve">
+    <value>Informe o erro</value>
+  </data>
+  <data name="LogError_IdRequired" xml:space="preserve">
+    <value>Informe o ID do log de erro</value>
+  </data>
+  <data name="Account_UserNotFound" xml:space="preserve">
+    <value>Usuário não encontrado</value>
+  </data>
+  <data name="Account_PasswordChanged" xml:space="preserve">
+    <value>Sua senha foi alterada com sucesso</value>
+  </data>
+  <data name="Account_CurrentPasswordIncorrect" xml:space="preserve">
+    <value>A senha atual está incorreta</value>
+  </data>
+  <data name="Account_NewPasswordMustBeDifferent" xml:space="preserve">
+    <value>A nova senha deve ser diferente da senha atual</value>
+  </data>
+  <data name="Account_FullNameRequired" xml:space="preserve">
+    <value>Preencha o campo de nome</value>
+  </data>
+  <data name="Account_FullNameMaxLength" xml:space="preserve">
+    <value>O nome deve ter no máximo 100 caracteres</value>
+  </data>
+  <data name="Account_FullNameMustIncludeFirstAndLastName" xml:space="preserve">
+    <value>Informe o nome e o sobrenome</value>
+  </data>
+  <data name="Account_PhoneRequired" xml:space="preserve">
+    <value>Preencha o campo de telefone</value>
+  </data>
+  <data name="Account_PhoneInvalid" xml:space="preserve">
+    <value>O telefone deve ter 10 ou 11 dígitos (DDD + número)</value>
+  </data>
+  <data name="Account_DateOfBirthInvalid" xml:space="preserve">
+    <value>A data de nascimento deve estar no passado</value>
+  </data>
+  <data name="Account_CpfRequired" xml:space="preserve">
+    <value>Preencha o campo de CPF</value>
+  </data>
+  <data name="Account_CepRequired" xml:space="preserve">
+    <value>O campo 'CEP' é obrigatório</value>
+  </data>
+  <data name="Account_CepFormat" xml:space="preserve">
+    <value>O campo 'CEP' deve conter exatamente 8 números</value>
+  </data>
+  <data name="Account_StreetRequired" xml:space="preserve">
+    <value>O campo 'Endereço' é obrigatório</value>
+  </data>
+  <data name="Account_StreetMaxLength" xml:space="preserve">
+    <value>O endereço deve ter no máximo 255 caracteres</value>
+  </data>
+  <data name="Account_NumberRequired" xml:space="preserve">
+    <value>O campo 'Número' é obrigatório</value>
+  </data>
+  <data name="Account_ComplementMaxLength" xml:space="preserve">
+    <value>O complemento deve ter no máximo 255 caracteres</value>
+  </data>
+  <data name="Account_NeighborhoodRequired" xml:space="preserve">
+    <value>O campo 'Bairro' é obrigatório</value>
+  </data>
+  <data name="Account_NeighborhoodMaxLength" xml:space="preserve">
+    <value>O bairro deve ter no máximo 100 caracteres</value>
+  </data>
+  <data name="Account_CityRequired" xml:space="preserve">
+    <value>O campo 'Cidade' é obrigatório</value>
+  </data>
+  <data name="Account_CityMaxLength" xml:space="preserve">
+    <value>A cidade deve ter no máximo 100 caracteres</value>
+  </data>
+  <data name="Account_StateRequired" xml:space="preserve">
+    <value>O campo 'Estado' é obrigatório</value>
+  </data>
+  <data name="Account_StateLength" xml:space="preserve">
+    <value>O estado deve ter 2 caracteres</value>
+  </data>
+  <data name="Account_CurrentPasswordRequired" xml:space="preserve">
+    <value>O campo 'Senha atual' é obrigatório</value>
+  </data>
+  <data name="Account_NewPasswordRequired" xml:space="preserve">
+    <value>O campo 'Nova senha' é obrigatório</value>
+  </data>
+  <data name="Account_NewPasswordMinLength" xml:space="preserve">
+    <value>A nova senha deve ter no mínimo 6 caracteres</value>
+  </data>
+  <data name="Account_NewPasswordMaxLength" xml:space="preserve">
+    <value>A nova senha deve ter no máximo 100 caracteres</value>
+  </data>
+  <data name="Account_ConfirmPasswordRequired" xml:space="preserve">
+    <value>O campo 'Confirmação de senha' é obrigatório</value>
+  </data>
+  <data name="Account_PasswordsDoNotMatch" xml:space="preserve">
+    <value>A confirmação de senha não coincide com a nova senha</value>
+  </data>
+  <data name="Pagination_InvalidPageNumber" xml:space="preserve">
+    <value>Número da página deve ser maior que 0</value>
+  </data>
+  <data name="Pagination_InvalidPageSize" xml:space="preserve">
+    <value>Tamanho da página deve estar entre 1 e 100</value>
+  </data>
+  <data name="Pagination_NoResults" xml:space="preserve">
+    <value>Nenhum resultado encontrado</value>
+  </data>
+  <data name="File_UploadSuccessful" xml:space="preserve">
+    <value>Arquivo enviado com sucesso</value>
+  </data>
+  <data name="File_InvalidFormat" xml:space="preserve">
+    <value>Formato de arquivo inválido. Formatos permitidos: {0}</value>
+  </data>
+  <data name="File_TooLarge" xml:space="preserve">
+    <value>Tamanho do arquivo excede o máximo permitido de {0}MB</value>
+  </data>
+  <data name="File_NotFound" xml:space="preserve">
+    <value>Arquivo não encontrado</value>
+  </data>
+  <data name="Turnstile_ValidationFailed" xml:space="preserve">
+    <value>Validação do captcha falhou. Por favor, tente novamente</value>
+  </data>
+  <data name="Turnstile_TokenRequired" xml:space="preserve">
+    <value>Token do captcha é obrigatório</value>
+  </data>
+  <data name="Account_CpfCnpjInvalid" xml:space="preserve">
+    <value>CPF ou CNPJ precisam ser um número válido</value>
+  </data>
+</root>

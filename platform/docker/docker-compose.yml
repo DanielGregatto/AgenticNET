@@ -1,0 +1,6 @@
+services:
+  ui.api:
+    image: ${DOCKER_REGISTRY-}uiapi
+    build:
+      context: .
+      dockerfile: ../../src/UI.API/Dockerfile
