@@ -1,6 +1,9 @@
 using AgentInfrastructure.Conversations;
 using AgentInfrastructure.Orchestration;
 using AgentInfrastructure.Plugins;
+using AgentInfrastructure.Plugins.Interfaces;
+using AgentInfrastructure.Providers;
+using AgentInfrastructure.Providers.Interfaces;
 using CrossCutting.Identity.Models;
 using Data.Context;
 using Domain.Configs;
@@ -10,7 +13,6 @@ using Identity.Model;
 using Identity.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Services.Infrastructure;
@@ -121,6 +123,12 @@ namespace IoC
             services.Configure<AgentOrchestrationOptions>(
                 configuration.GetSection(AgentOrchestrationOptions.SectionName));
 
+            services.Configure<RAGSearchOptions>(
+                configuration.GetSection(RAGSearchOptions.SectionName));
+
+            services.Configure<EmbeddingOptions>(
+                configuration.GetSection(EmbeddingOptions.SectionName));
+
             services.Configure<EmailConfig>(configuration.GetSection("EmailConfig"));
             services.Configure<SecretEndpointConfig>(configuration.GetSection("SecretEndpointConfig"));
             services.Configure<AzureStorageConfig>(configuration.GetSection("AzureStorage"));
@@ -131,8 +139,12 @@ namespace IoC
             // AGENT ORCHESTRATION
             // ============================================================================
             services.AddSingleton<IConversationStore, InMemoryConversationStore>();
-            services.AddScoped<IProductCatalogPlugin, ProductCatalogPlugin>();
+            services.AddSingleton<IEmbeddingService, AzureEmbeddingService>();
+            services.AddScoped<IRAGProvider, AzureAiSearchRagProvider>();
             services.AddScoped<IAgentOrchestrator, SemanticKernelOrchestrator>();
+
+            services.AddScoped<IProductCatalogPlugin, ProductCatalogPlugin>();
+            services.AddScoped<IRAGPlugin, RAGPlugin>();
         }
     }
 }

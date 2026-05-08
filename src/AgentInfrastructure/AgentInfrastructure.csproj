@@ -2,11 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <!-- Suppress SK experimental API diagnostics (FunctionChoiceBehavior, etc.) -->
-    <NoWarn>$(NoWarn);SKEXP0001</NoWarn>
+    <!-- Suppress SK experimental API diagnostics (FunctionChoiceBehavior, embedding generation, etc.) -->
+    <NoWarn>$(NoWarn);SKEXP0001;SKEXP0010</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Search.Documents" Version="11.6.0" />
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.26.0" />
   </ItemGroup>
 

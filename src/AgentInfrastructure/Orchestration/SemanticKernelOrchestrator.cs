@@ -1,5 +1,6 @@
 using AgentInfrastructure.Conversations;
 using AgentInfrastructure.Plugins;
+using AgentInfrastructure.Plugins.Interfaces;
 using AgentInfrastructure.Providers;
 using Domain.Configs;
 using Domain.Contracts.Agent;
@@ -24,17 +25,20 @@ namespace AgentInfrastructure.Orchestration
         private readonly ILogger<SemanticKernelOrchestrator> _logger;
         private readonly IConversationStore _conversationStore;
         private readonly IProductCatalogPlugin _productCatalogPlugin;
+        private readonly IRAGPlugin _ragPlugin;
 
         public SemanticKernelOrchestrator(
             IOptions<AgentOrchestrationOptions> options,
             ILogger<SemanticKernelOrchestrator> logger,
             IConversationStore conversationStore,
-            IProductCatalogPlugin productCatalogPlugin)
+            IProductCatalogPlugin productCatalogPlugin,
+            IRAGPlugin ragPlugin)
         {
             _options = options.Value;
             _logger = logger;
             _conversationStore = conversationStore;
             _productCatalogPlugin = productCatalogPlugin;
+            _ragPlugin = ragPlugin;
         }
 
         public IReadOnlyList<AgentOptions> GetRegisteredAgents() =>
@@ -114,8 +118,10 @@ namespace AgentInfrastructure.Orchestration
             {
                 case "ProductCatalog":
                     return _productCatalogPlugin;
+                case "RAG":
+                    return _ragPlugin;
                 default:
-                    throw new InvalidOperationException($"Plugin '{name}' is not registered. Available plugins: ProductCatalog.");
+                    throw new InvalidOperationException($"Plugin '{name}' is not registered. Available plugins: ProductCatalog, RAG.");
             }
         }
     }

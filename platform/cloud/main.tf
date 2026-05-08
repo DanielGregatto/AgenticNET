@@ -75,6 +75,11 @@ module "identity_acr_pull" {
   acr_id              = module.acr.id
 }
 
+# TODO: Azure AI Search (RAG)
+# Add module "search" using azurerm_search_service (Standard S1 tier minimum for vector search).
+# Required outputs: endpoint, primary_key → pass as env vars to the container app.
+# Index "knowledge" must be created separately (portal, ARM, or az CLI) after provisioning.
+
 module "api" {
   source                      = "./modules/containerapp-api"
   environment                 = var.environment
