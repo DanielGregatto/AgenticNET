@@ -18,3 +18,9 @@ resource "azurerm_storage_account" "this" {
     prevent_destroy = true
   }
 }
+
+resource "azurerm_storage_container" "keys" {
+  name                  = "keys"
+  storage_account_id    = azurerm_storage_account.this.id
+  container_access_type = "private"
+}

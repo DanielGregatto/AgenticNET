@@ -47,6 +47,7 @@ namespace AgentInfrastructure.Orchestration
             _user = user;
         }
 
+
         public IReadOnlyList<AgentOptions> GetRegisteredAgents() =>
             _options.Agents.AsReadOnly();
 

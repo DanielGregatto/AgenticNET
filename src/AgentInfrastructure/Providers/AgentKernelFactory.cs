@@ -1,3 +1,4 @@
+using Azure.Identity;
 using Domain.Configs;
 using Microsoft.SemanticKernel;
 using System;
@@ -27,18 +28,16 @@ namespace AgentInfrastructure.Providers
                     builder.AddAzureOpenAIChatCompletion(
                         deploymentName: agent.DeploymentOrModel,
                         endpoint: provider.Endpoint,
-                        apiKey: provider.ApiKey);
+                        credentials: new DefaultAzureCredential());
                     break;
 
                 case "OpenAI":
-                    builder.AddOpenAIChatCompletion(
-                        modelId: agent.DeploymentOrModel,
-                        apiKey: provider.ApiKey);
-                    break;
+                    throw new InvalidOperationException(
+                        "OpenAI provider requires an API key and is not supported in Entra ID mode. Use an AzureOpenAI provider instead.");
 
                 default:
                     throw new InvalidOperationException(
-                        $"Unknown provider '{providerName}'. Supported values: AzureOpenAI, AzureOpenAI-EastUS2, OpenAI.");
+                        $"Unknown provider '{providerName}'. Supported values: AzureOpenAI, AzureOpenAI-EastUS2.");
             }
 
             return builder.Build();
