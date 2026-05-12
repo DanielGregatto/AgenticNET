@@ -112,6 +112,92 @@ namespace AgentInfrastructure.Orchestration
             }
         }
 
+        public async Task<Result<string>> RouteAsync(
+            string userMessage,
+            CancellationToken cancellationToken = default)
+        {
+            var routerConfig = _options.Agents.FirstOrDefault(a =>
+                string.Equals(a.Name, _options.RouterAgentName, StringComparison.OrdinalIgnoreCase));
+
+            if (routerConfig is null)
+                return Result<string>.Failure(
+                    $"Router agent '{_options.RouterAgentName}' is not registered in AgentOrchestration:Agents.");
+
+            var candidates = GetRegisteredAgents()
+                .Where(a => !string.Equals(a.Name, _options.RouterAgentName, StringComparison.OrdinalIgnoreCase)
+                         && !string.Equals(a.Name, _options.DefaultAgentName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (!candidates.Any())
+                return Result<string>.Failure("No specialist agents are registered for routing.");
+
+            var agentList = string.Join("\n", candidates.Select(a =>
+                $"- Name: {a.Name} | Description: {a.Description}"));
+
+            var systemPrompt =
+                "You are an intelligent agent router. Based on the user message, return ONLY the agent Name of the most appropriate agent.\n\n" +
+                $"Available agents:\n{agentList}\n\n" +
+                "Reply with ONLY the exact Name value from the list above. No explanation. No punctuation.";
+
+            _logger.LogInformation("Classifying message via RouterAgent '{RouterAgent}'", _options.RouterAgentName);
+
+            try
+            {
+                var routerKernel = AgentKernelFactory.Create(routerConfig, _options);
+                var chatService = routerKernel.GetRequiredService<IChatCompletionService>();
+
+                var classifierHistory = new ChatHistory(systemPrompt);
+                classifierHistory.AddUserMessage(userMessage);
+
+                var response = await chatService.GetChatMessageContentAsync(
+                    classifierHistory,
+                    cancellationToken: cancellationToken);
+
+                var resolvedName = response.Content?.Trim();
+
+                var matched = candidates.FirstOrDefault(a =>
+                    string.Equals(a.Name, resolvedName, StringComparison.OrdinalIgnoreCase));
+
+                if (matched is null)
+                    return Result<string>.Failure(
+                        $"Router returned unknown agent '{resolvedName}'. " +
+                        $"Available: {string.Join(", ", candidates.Select(a => a.Name))}.");
+
+                _logger.LogInformation("RouterAgent resolved '{ResolvedAgent}'", matched.Name);
+
+                return Result<string>.Success(matched.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during agent classification");
+                return Result<string>.Failure("Failed to classify the message.", ErrorTypes.External);
+            }
+        }
+
+        public async Task<Result<AgentResponse>> RouteAndSendAsync(
+            string userMessage,
+            string conversationId,
+            bool canUseDefaultAgent = true,
+            CancellationToken cancellationToken = default)
+        {
+            var routeResult = await RouteAsync(userMessage, cancellationToken);
+
+            if (routeResult.IsFailure)
+            {
+                if (!canUseDefaultAgent)
+                    return Result<AgentResponse>.Failure(routeResult.Errors.ToArray());
+
+                _logger.LogWarning(
+                    "Routing failed ({Error}). Falling back to default agent '{DefaultAgent}'.",
+                    routeResult.Errors.FirstOrDefault()?.Message,
+                    _options.DefaultAgentName);
+
+                return await SendMessageAsync(_options.DefaultAgentName, userMessage, conversationId, cancellationToken);
+            }
+
+            return await SendMessageAsync(routeResult.Data, userMessage, conversationId, cancellationToken);
+        }
+
         private object ResolvePlugin(string name)
         {
             switch (name)

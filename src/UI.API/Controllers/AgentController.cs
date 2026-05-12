@@ -3,6 +3,7 @@ using Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services.Contracts.Results;
+using Services.Features.Agent.Commands.Chat;
 using Services.Features.Agent.Commands.SendMessage;
 using Services.Features.Agent.Queries.ListAgents;
 using UI.API.Controllers.Base;
@@ -18,6 +19,27 @@ namespace UI.API.Controllers
         {
             _mediator = mediator;
             _logger = logger;
+        }
+
+        /// <summary>
+        /// Sends a message to the router, which classifies the intent and delegates to the most appropriate specialist agent.
+        /// Supply the same ConversationId across requests to continue a conversation.
+        /// Omit ConversationId to start a new conversation (a new ID is generated and returned).
+        /// Set CanUseDefaultAgent to false to receive an error instead of a fallback when routing fails.
+        /// </summary>
+        [HttpPost("v1/chat")]
+        [Authorize]
+        [ProducesResponseType(typeof(SuccessResponse<AgentResult>), 200)]
+        [ProducesResponseType(typeof(ErrorResponseDto), 400)]
+        [ProducesResponseType(typeof(ErrorResponseDto), 401)]
+        public async Task<IActionResult> Chat([FromBody] ChatCommand command)
+        {
+            _logger.LogInformation(
+                "Chat request received, conversation {ConversationId}",
+                command.ConversationId);
+
+            var result = await _mediator.SendCommand(command);
+            return Response(result);
         }
 
         /// <summary>
