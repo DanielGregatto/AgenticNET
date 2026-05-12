@@ -30,11 +30,17 @@ namespace Data.Context
         }
 
         public DbSet<Product> Products { get; set; }
+        public DbSet<Conversation> Conversations { get; set; }
+        public DbSet<ConversationMessage> ConversationMessages { get; set; }
+        public DbSet<ConversationTurn> ConversationTurns { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.HasDefaultSchema(_defaultSchema);
             modelBuilder.AddConfiguration(new ProductMapping(this._schema));
+            modelBuilder.AddConfiguration(new ConversationMapping(this._schema));
+            modelBuilder.AddConfiguration(new ConversationMessageMapping(this._schema));
+            modelBuilder.AddConfiguration(new ConversationTurnMapping(this._schema));
             base.OnModelCreating(modelBuilder);
         }
 

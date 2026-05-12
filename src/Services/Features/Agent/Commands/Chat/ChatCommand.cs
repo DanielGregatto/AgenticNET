@@ -19,5 +19,11 @@ namespace Services.Features.Agent.Commands.Chat
         /// Defaults to true.
         /// </summary>
         public bool CanUseDefaultAgent { get; set; } = true;
+
+        /// <summary>
+        /// When true the response includes the full execution trace (router decision, plugin calls, reviewer result).
+        /// Defaults to false.
+        /// </summary>
+        public bool IncludeTrace { get; set; } = false;
     }
 }

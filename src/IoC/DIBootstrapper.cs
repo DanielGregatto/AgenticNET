@@ -1,4 +1,3 @@
-using AgentInfrastructure.Conversations;
 using AgentInfrastructure.Orchestration;
 using AgentInfrastructure.Plugins;
 using AgentInfrastructure.Plugins.Interfaces;
@@ -138,7 +137,6 @@ namespace IoC
             // ============================================================================
             // AGENT ORCHESTRATION
             // ============================================================================
-            services.AddSingleton<IConversationStore, InMemoryConversationStore>();
             services.AddSingleton<IEmbeddingService, AzureEmbeddingService>();
             services.AddScoped<IRAGProvider, AzureAiSearchRagProvider>();
             services.AddScoped<IAgentOrchestrator, SemanticKernelOrchestrator>();

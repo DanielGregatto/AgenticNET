@@ -60,7 +60,7 @@ namespace Services.Features.Agent.Commands.Chat
                 "Chat routed to agent '{AgentName}' on conversation '{ConversationId}'",
                 result.Data.AgentName, request.ConversationId);
 
-            return Result<AgentResult>.Success(AgentResult.FromDomain(result.Data));
+            return Result<AgentResult>.Success(AgentResult.FromDomain(result.Data, request.IncludeTrace));
         }
     }
 }

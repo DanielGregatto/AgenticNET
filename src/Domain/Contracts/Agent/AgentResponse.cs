@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Domain.Contracts.Agent
 {
@@ -6,5 +7,6 @@ namespace Domain.Contracts.Agent
         string AgentName,
         string ConversationId,
         string Content,
-        DateTimeOffset Timestamp);
+        DateTimeOffset Timestamp,
+        IReadOnlyList<TraceStep>? Trace = null);
 }

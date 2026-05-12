@@ -14,5 +14,11 @@ namespace Services.Features.Agent.Commands.SendMessage
         /// When null or empty the handler generates a new conversation ID.
         /// </summary>
         public string ConversationId { get; set; }
+
+        /// <summary>
+        /// When true the response includes the full execution trace (plugin calls, reviewer result).
+        /// Defaults to false.
+        /// </summary>
+        public bool IncludeTrace { get; set; } = false;
     }
 }

@@ -1,5 +1,6 @@
 using Domain.Contracts.Agent;
 using System;
+using System.Collections.Generic;
 
 namespace Services.Contracts.Results
 {
@@ -7,13 +8,15 @@ namespace Services.Contracts.Results
         string AgentName,
         string ConversationId,
         string Content,
-        DateTimeOffset Timestamp)
+        DateTimeOffset Timestamp,
+        IReadOnlyList<TraceStep>? Trace = null)
     {
-        public static AgentResult FromDomain(AgentResponse response) =>
+        public static AgentResult FromDomain(AgentResponse response, bool includeTrace = false) =>
             new AgentResult(
                 response.AgentName,
                 response.ConversationId,
                 response.Content,
-                response.Timestamp);
+                response.Timestamp,
+                includeTrace ? response.Trace : null);
     }
 }

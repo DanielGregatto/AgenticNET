@@ -61,7 +61,7 @@ namespace Services.Features.Agent.Commands.SendMessage
             _logger.LogInformation("Agent {AgentName} responded on conversation {ConversationId}",
                 request.AgentName, request.ConversationId);
 
-            return Result<AgentResult>.Success(AgentResult.FromDomain(result.Data));
+            return Result<AgentResult>.Success(AgentResult.FromDomain(result.Data, request.IncludeTrace));
         }
     }
 }
