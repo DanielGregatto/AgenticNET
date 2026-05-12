@@ -198,13 +198,18 @@ namespace AgentInfrastructure.Orchestration
             if (historyResult.IsFailure)
                 return Result<AgentResponse>.Failure(historyResult.Errors.ToArray());
 
-            var history = BuildChatHistory(agentConfig.SystemPrompt, historyResult.Data.Messages);
-            history.AddUserMessage(userMessage);
-
             var kernel = AgentKernelFactory.Create(agentConfig, _options);
 
+            var documentSearchPlugins = new System.Collections.Generic.HashSet<string>();
             foreach (var pluginName in agentConfig.Plugins)
-                kernel.Plugins.AddFromObject(ResolvePlugin(pluginName));
+            {
+                var plugin = ResolvePlugin(pluginName);
+                kernel.Plugins.AddFromObject(plugin, pluginName);
+
+                if (plugin is IRAGPlugin)
+                    documentSearchPlugins.Add(pluginName);
+            }
+            kernel.Data["DocumentSearchPlugins"] = documentSearchPlugins;
 
             kernel.FunctionInvocationFilters.Add(new TracingFunctionInvocationFilter(traceContext));
 
@@ -214,18 +219,48 @@ namespace AgentInfrastructure.Orchestration
                 FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
             };
 
+            var maxAttempts = agentConfig.Review.Required
+                && !string.IsNullOrWhiteSpace(agentConfig.Review.AgentReviewerName)
+                && agentConfig.Review.AttemptsToImprove > 0
+                    ? agentConfig.Review.AttemptsToImprove
+                    : 1;
+
             try
             {
-                var response = await chatService.GetChatMessageContentAsync(
-                    history,
-                    executionSettings: executionSettings,
-                    kernel: kernel,
-                    cancellationToken: cancellationToken);
+                string content = string.Empty;
+                string currentMessage = userMessage;
 
-                var content = response.Content ?? string.Empty;
+                for (int attempt = 0; attempt < maxAttempts; attempt++)
+                {
+                    var attemptHistory = BuildChatHistory(agentConfig.SystemPrompt, historyResult.Data.Messages);
+                    attemptHistory.AddUserMessage(currentMessage);
 
-                if (agentConfig.Review.Required && !string.IsNullOrWhiteSpace(agentConfig.Review.AgentReviewerName))
-                    await RunReviewerAsync(agentConfig, userMessage, content, traceContext, cancellationToken);
+                    var response = await chatService.GetChatMessageContentAsync(
+                        attemptHistory,
+                        executionSettings: executionSettings,
+                        kernel: kernel,
+                        cancellationToken: cancellationToken);
+
+                    content = response.Content ?? string.Empty;
+
+                    if (!agentConfig.Review.Required || string.IsNullOrWhiteSpace(agentConfig.Review.AgentReviewerName))
+                        break;
+
+                    var reviewerOutput = await RunReviewerAsync(
+                        agentConfig, currentMessage, content, traceContext, attempt, cancellationToken);
+
+                    if (reviewerOutput is null) break;
+
+                    var belowThreshold = agentConfig.Review.ConfidenceScore.HasValue
+                        && reviewerOutput.Confidence < agentConfig.Review.ConfidenceScore.Value;
+
+                    if (!belowThreshold) break;
+
+                    if (attempt + 1 < maxAttempts && !string.IsNullOrWhiteSpace(reviewerOutput.InstructionToImprove))
+                        currentMessage = $"{userMessage}\n\nImprovement instruction: {reviewerOutput.InstructionToImprove}";
+                    else
+                        break;
+                }
 
                 var saveResult = await _mediator.SendCommand(new SaveConversationTurnCommand
                 {
@@ -264,11 +299,12 @@ namespace AgentInfrastructure.Orchestration
             }
         }
 
-        private async Task RunReviewerAsync(
+        private async Task<ReviewerOutput> RunReviewerAsync(
             AgentOptions agentConfig,
             string userMessage,
             string assistantAnswer,
             TraceContext traceContext,
+            int attempt,
             CancellationToken cancellationToken)
         {
             var reviewerConfig = _options.Agents.FirstOrDefault(a =>
@@ -279,7 +315,7 @@ namespace AgentInfrastructure.Orchestration
                 _logger.LogWarning(
                     "Reviewer agent '{ReviewerName}' not found for agent '{AgentName}'.",
                     agentConfig.Review.AgentReviewerName, agentConfig.Name);
-                return;
+                return null;
             }
 
             try
@@ -288,8 +324,14 @@ namespace AgentInfrastructure.Orchestration
                 var chatService = reviewerKernel.GetRequiredService<IChatCompletionService>();
 
                 var reviewerHistory = new ChatHistory(reviewerConfig.SystemPrompt ?? string.Empty);
-                reviewerHistory.AddUserMessage(
-                    $"Question: {userMessage}\n\nAnswer: {assistantAnswer}");
+
+                var reviewerUserMessage = $"Question: {userMessage}\n\nAnswer: {assistantAnswer}";
+                if (agentConfig.Review.ConfidenceScore.HasValue)
+                    reviewerUserMessage +=
+                        $"\n\nMinimum acceptable confidence threshold: {agentConfig.Review.ConfidenceScore.Value:F2}. " +
+                        $"Set isValid to false if your confidence score is below {agentConfig.Review.ConfidenceScore.Value:F2}.";
+
+                reviewerHistory.AddUserMessage(reviewerUserMessage);
 
                 var response = await chatService.GetChatMessageContentAsync(
                     reviewerHistory, cancellationToken: cancellationToken);
@@ -301,25 +343,32 @@ namespace AgentInfrastructure.Orchestration
                     _logger.LogWarning(
                         "Reviewer agent '{ReviewerName}' returned non-parseable response.",
                         agentConfig.Review.AgentReviewerName);
-                    return;
+                    return null;
                 }
+
+                var belowThreshold = agentConfig.Review.ConfidenceScore.HasValue
+                    && reviewerOutput.Confidence < agentConfig.Review.ConfidenceScore.Value;
 
                 traceContext.Add(TraceStepType.ReviewerDecision, new
                 {
+                    Attempt = attempt + 1,
                     ReviewerAgent = agentConfig.Review.AgentReviewerName,
                     reviewerOutput.IsValid,
                     reviewerOutput.Confidence,
-                    BelowThreshold = agentConfig.Review.ConfidenceScore.HasValue
-                        && reviewerOutput.Confidence < agentConfig.Review.ConfidenceScore.Value,
+                    BelowThreshold = belowThreshold,
                     Threshold = agentConfig.Review.ConfidenceScore,
-                    reviewerOutput.Notes
+                    reviewerOutput.Notes,
+                    reviewerOutput.InstructionToImprove
                 });
+
+                return reviewerOutput;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
                     "Error running reviewer agent '{ReviewerName}'.",
                     agentConfig.Review.AgentReviewerName);
+                return null;
             }
         }
 

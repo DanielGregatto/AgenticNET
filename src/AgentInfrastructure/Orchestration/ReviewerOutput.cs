@@ -12,5 +12,8 @@ namespace AgentInfrastructure.Orchestration
 
         [JsonPropertyName("notes")]
         public string Notes { get; set; }
+
+        [JsonPropertyName("instructionToImprove")]
+        public string InstructionToImprove { get; set; }
     }
 }

@@ -7,5 +7,8 @@ namespace Domain.Configs
 
         /// <summary>Minimum acceptable confidence score (0.0–1.0). Null means no threshold check.</summary>
         public double? ConfidenceScore { get; set; }
+
+        /// <summary>Maximum number of times the agent will retry with the reviewer's improvement instruction before accepting the last answer.</summary>
+        public int AttemptsToImprove { get; set; } = 1;
     }
 }

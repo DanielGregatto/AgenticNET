@@ -1,6 +1,7 @@
 using Domain.Contracts.Agent;
 using Microsoft.SemanticKernel;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AgentInfrastructure.Conversations
@@ -20,7 +21,7 @@ namespace AgentInfrastructure.Conversations
             {
                 Plugin = context.Function.PluginName,
                 Function = context.Function.Name,
-                Input = context.Arguments.ToString()
+                Input = context.Arguments.ToDictionary(kv => kv.Key, kv => kv.Value?.ToString())
             });
 
             await next(context);
@@ -31,14 +32,21 @@ namespace AgentInfrastructure.Conversations
             {
                 Plugin = context.Function.PluginName,
                 Function = context.Function.Name,
-                DocumentsRetrieved = CountDocuments(context.Function.Name, resultStr),
+                DocumentsRetrieved = CountDocuments(context, resultStr),
                 ResultLength = resultStr.Length
             });
         }
 
-        private static int? CountDocuments(string functionName, string result)
+        private static int? CountDocuments(FunctionInvocationContext context, string result)
         {
-            if (functionName != "SearchKnowledgeBase" || string.IsNullOrEmpty(result))
+            if (string.IsNullOrEmpty(result))
+                return null;
+
+            var documentSearchPlugins = context.Kernel.Data.TryGetValue("DocumentSearchPlugins", out var v)
+                ? v as System.Collections.Generic.HashSet<string>
+                : null;
+
+            if (documentSearchPlugins?.Contains(context.Function.PluginName) != true)
                 return null;
 
             return result.Split("---").Length;
