@@ -1,6 +1,7 @@
 // Terraform configuration for AgenticNET on Azure Container Apps
 //
 // Auth: az login && az account set --subscription <SUBSCRIPTION_ID>
+///set ARM_SUBSCRIPTION_ID=<SUBSCRIPTION_ID>
 //
 // DEV:  terraform init -backend-config=env/backend.dev.hcl
 //       terraform plan  -var-file=tvars/terraform-dev.tfvars
@@ -10,22 +11,34 @@
 //       terraform plan  -var-file=tvars/terraform-prod.tfvars
 //       terraform apply -var-file=tvars/terraform-prod.tfvars
 //
-// After first apply — grant the managed identity access to SQL (run once per environment):
+// After first apply — connect to SQL as the AAD admin and run once per environment:
 //   CREATE USER [uami-<env>-<project>] FROM EXTERNAL PROVIDER;
-//   ALTER ROLE db_datareader ADD MEMBER [uami-<env>-<project>];
-//   ALTER ROLE db_datawriter ADD MEMBER [uami-<env>-<project>];
+//   ALTER ROLE db_owner ADD MEMBER [uami-<env>-<project>];
+// (db_owner required — app runs EF Core migrations which need DDL permissions)
+
+locals {
+  tags = merge({
+    environment = var.environment
+    project     = var.project_name
+    managed_by  = "terraform"
+  }, var.tags)
+}
 
 module "rg" {
-  source      = "./modules/rg"
-  environment = var.environment
-  location    = var.location
+  source       = "./modules/rg"
+  environment  = var.environment
+  project_name = var.project_name
+  location     = var.location
+  tags         = local.tags
 }
 
 module "network" {
   source              = "./modules/network"
   environment         = var.environment
+  project_name        = var.project_name
   location            = module.rg.location
   resource_group_name = module.rg.name
+  tags                = local.tags
 }
 
 module "storage" {
@@ -34,6 +47,7 @@ module "storage" {
   project_name        = var.project_name
   location            = module.rg.location
   resource_group_name = module.rg.name
+  tags                = local.tags
 }
 
 module "acr" {
@@ -42,6 +56,7 @@ module "acr" {
   project_name        = var.project_name
   location            = module.rg.location
   resource_group_name = module.rg.name
+  tags                = local.tags
 }
 
 module "logs" {
@@ -50,6 +65,7 @@ module "logs" {
   project_name        = var.project_name
   location            = module.rg.location
   resource_group_name = module.rg.name
+  tags                = local.tags
 }
 
 module "cae" {
@@ -60,6 +76,7 @@ module "cae" {
   resource_group_name        = module.rg.name
   log_analytics_workspace_id = module.logs.id
   infrastructure_subnet_id   = module.network.subnet_containerapps_id
+  tags                       = local.tags
 }
 
 module "openai" {
@@ -76,6 +93,7 @@ module "openai" {
   embedding_deployment_name = var.embedding_deployment_name
   embedding_model_name      = var.embedding_model_name
   embedding_model_version   = var.embedding_model_version
+  tags                      = local.tags
 }
 
 module "search" {
@@ -85,6 +103,7 @@ module "search" {
   location            = module.rg.location
   resource_group_name = module.rg.name
   sku                 = var.search_sku
+  tags                = local.tags
 }
 
 module "identity_acr_pull" {
@@ -97,6 +116,12 @@ module "identity_acr_pull" {
   storage_account_id  = module.storage.id
   openai_resource_id  = module.openai.id
   search_resource_id  = module.search.id
+  tags                = local.tags
+}
+
+resource "time_sleep" "identity_propagation" {
+  depends_on      = [module.identity_acr_pull]
+  create_duration = "30s"
 }
 
 module "sql" {
@@ -105,12 +130,14 @@ module "sql" {
   project_name        = var.project_name
   location            = module.rg.location
   resource_group_name = module.rg.name
-  database_name       = var.sql_database_name
-  sku_name            = var.sql_sku
+  database_name               = var.sql_database_name
+  sku_name                    = var.sql_sku
+  min_capacity                = var.sql_min_capacity
+  auto_pause_delay_in_minutes = var.sql_auto_pause_delay_in_minutes
 
-  # UAMI is the AAD admin — no SQL password exists
-  aad_admin_object_id = module.identity_acr_pull.principal_id
-  aad_admin_login     = "uami-${var.environment}-${var.project_name}"
+  aad_admin_login     = var.sql_aad_admin_login
+  aad_admin_object_id = var.sql_aad_admin_object_id
+  uami_principal_id   = module.identity_acr_pull.principal_id
 
   depends_on = [module.identity_acr_pull]
 }
@@ -140,8 +167,9 @@ module "api" {
   search_topk         = var.search_topk
   search_vector_field = var.search_vector_field
 
-  storage_account_name         = module.storage.name
+  storage_account_name          = module.storage.name
   appinsights_connection_string = module.logs.appinsights_connection_string
+  tags                          = local.tags
 
-  depends_on = [module.identity_acr_pull, module.sql]
+  depends_on = [time_sleep.identity_propagation, module.sql]
 }

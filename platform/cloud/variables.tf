@@ -30,9 +30,29 @@ variable "sql_database_name" {
   default = ""
 }
 
+variable "sql_aad_admin_login" {
+  type        = string
+  description = "AAD login (email) of the SQL server administrator. Used to grant interactive access for running migrations and management queries."
+}
+
+variable "sql_aad_admin_object_id" {
+  type        = string
+  description = "AAD object ID of the SQL server administrator. Run: az ad signed-in-user show --query id -o tsv"
+}
+
 variable "sql_sku" {
   type    = string
-  default = "Basic"
+  default = "GP_S_Gen5_1"
+}
+
+variable "sql_min_capacity" {
+  type    = number
+  default = 0.5
+}
+
+variable "sql_auto_pause_delay_in_minutes" {
+  type    = number
+  default = 60
 }
 
 # Azure OpenAI model deployments
@@ -85,4 +105,9 @@ variable "search_topk" {
 variable "search_vector_field" {
   type    = string
   default = "contentVector"
+}
+
+variable "tags" {
+  type    = map(string)
+  default = {}
 }

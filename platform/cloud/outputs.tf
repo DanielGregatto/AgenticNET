@@ -14,6 +14,15 @@ output "sql_server_fqdn" {
   value = module.sql.server_fqdn
 }
 
+output "sql_admin_login" {
+  value = module.sql.sql_admin_login
+}
+
+output "sql_admin_password" {
+  value     = module.sql.sql_admin_password
+  sensitive = true
+}
+
 output "openai_endpoint" {
   value = module.openai.endpoint
 }

@@ -1,5 +1,8 @@
+using Data.Context;
 using Identity;
+using Identity.Context;
 using IoC;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using UI.API.Configurations;
@@ -117,6 +120,26 @@ namespace UI.API
             // BUILD APPLICATION
             // ============================================================================
             var app = builder.Build();
+
+            // Apply pending EF Core migrations on startup (configurable via Application:RunMigrationsAutomatically)
+            if (app.Configuration.GetValue<bool>("Application:RunMigrationsAutomatically", true))
+            {
+                using var scope = app.Services.CreateScope();
+                var migrationLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+                try
+                {
+                    migrationLogger.LogInformation("Applying AppDbContext migrations...");
+                    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+                    migrationLogger.LogInformation("Applying AppIdentityDbContext migrations...");
+                    scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>().Database.Migrate();
+                    migrationLogger.LogInformation("Migrations applied successfully.");
+                }
+                catch (Exception ex)
+                {
+                    migrationLogger.LogError(ex, "Migration failed.");
+                    throw;
+                }
+            }
 
             // Initialize Polly policies
             PollyConfiguration.InitializePolly(app.Services);

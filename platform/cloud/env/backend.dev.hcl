@@ -1,4 +1,4 @@
-resource_group_name  = "rg-terraform-core"
+resource_group_name  = "rg-terraform-agnet-core"
 storage_account_name = "stterraformagenticnet"
 container_name       = "tfstate-dev"
-key                  = "[nomedoprojeto]-dev.tfstate"
+key                  = "agenticnet-dev.tfstate"

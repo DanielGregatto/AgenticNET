@@ -2,6 +2,10 @@ variable "environment"         { type = string }
 variable "project_name"        { type = string }
 variable "location"            { type = string }
 variable "resource_group_name" { type = string }
+variable "tags" {
+  type    = map(string)
+  default = {}
+}
 
 resource "azurerm_container_registry" "this" {
   name                = "acr${var.environment}${var.project_name}"
@@ -9,4 +13,5 @@ resource "azurerm_container_registry" "this" {
   location            = var.location
   sku                 = "Basic"
   admin_enabled       = false
+  tags                = var.tags
 }

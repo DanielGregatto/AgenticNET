@@ -4,8 +4,10 @@ aspnetcore_environment = "Production"
 location               = "brazilsouth"
 openai_location        = "eastus2"
 
-sql_database_name = "agenticnet"
-sql_sku           = "S1"
+sql_database_name               = "agenticnet"
+sql_sku                         = "GP_S_Gen5_1"
+sql_min_capacity                = 0.5
+sql_auto_pause_delay_in_minutes = 30
 
 # Deployment name = your custom label; model name = Azure model identifier
 chat_deployment_name  = "chat"
@@ -16,7 +18,7 @@ embedding_deployment_name = "embeddings"
 embedding_model_name      = "text-embedding-ada-002"
 embedding_model_version   = "2"
 
-search_sku          = "standard"
+search_sku          = "free"
 search_index_name   = "knowledge"
 search_topk         = 5
 search_vector_field = "contentVector"
