@@ -85,6 +85,11 @@ resource "azurerm_container_app" "this" {
       }
 
       env {
+        name  = "AZURE_CLIENT_ID"
+        value = var.identity_client_id
+      }
+
+      env {
         name  = "ConnectionStrings__DefaultConnection"
         value = "Server=${var.sql_server_fqdn};Database=${var.sql_database_name};Authentication=Active Directory Managed Identity;User Id=${var.identity_client_id};Encrypt=True;MultipleActiveResultSets=True;"
       }
