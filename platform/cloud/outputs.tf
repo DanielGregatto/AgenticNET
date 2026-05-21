@@ -1,3 +1,7 @@
+output "resource_group_name" {
+  value = module.rg.name
+}
+
 output "acr_login_server" {
   value = module.acr.login_server
 }
@@ -6,8 +10,29 @@ output "container_app_name" {
   value = module.api.name
 }
 
-output "resource_group_name" {
-  value = module.rg.name
+output "sql_server_fqdn" {
+  value = module.sql.server_fqdn
+}
+
+output "sql_admin_login" {
+  value = module.sql.sql_admin_login
+}
+
+output "sql_admin_password" {
+  value     = module.sql.sql_admin_password
+  sensitive = true
+}
+
+output "openai_endpoint" {
+  value = module.openai.endpoint
+}
+
+output "search_endpoint" {
+  value = module.search.endpoint
+}
+
+output "identity_client_id" {
+  value = module.identity_acr_pull.client_id
 }
 
 output "project_name" {
