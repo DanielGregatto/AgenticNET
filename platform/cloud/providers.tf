@@ -8,9 +8,21 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.9"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
 }
 
 provider "azurerm" {
-  features {}
+  features {
+    storage {
+      data_plane_available = false
+    }
+  }
 }

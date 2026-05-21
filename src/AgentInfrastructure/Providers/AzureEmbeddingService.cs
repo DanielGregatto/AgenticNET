@@ -1,4 +1,5 @@
 using AgentInfrastructure.Providers.Interfaces;
+using Azure.Identity;
 using Domain.Configs;
 using Domain.Contracts.Common;
 using Domain.Enums;
@@ -8,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-
 
 namespace AgentInfrastructure.Providers
 {
@@ -31,7 +31,7 @@ namespace AgentInfrastructure.Providers
             _inner = new AzureOpenAITextEmbeddingGenerationService(
                 options.Deployment,
                 options.Endpoint,
-                options.ApiKey);
+                new DefaultAzureCredential());
         }
 
         /// <summary>

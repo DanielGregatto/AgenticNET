@@ -1,4 +1,4 @@
-resource_group_name  = "rg-terraform-core"
-storage_account_name = "stterraformconsulfarma"
+resource_group_name  = "rg-terraform-agenticnet-core"
+storage_account_name = "stterraformagnet051434"
 container_name       = "tfstate-dev"
-key                  = "[nomedoprojeto]-dev.tfstate"
+key                  = "agenticnet-dev.tfstate"

@@ -1,5 +1,6 @@
 using AgentInfrastructure.Providers.Interfaces;
 using Azure;
+using Azure.Identity;
 using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
 using Domain.Configs;
@@ -37,7 +38,7 @@ namespace AgentInfrastructure.Providers
             _searchClient = new SearchClient(
                 new Uri(_options.Endpoint),
                 _options.IndexName,
-                new AzureKeyCredential(_options.ApiKey));
+                new DefaultAzureCredential());
         }
 
         /// <summary>

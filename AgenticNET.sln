@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.4.11626.88 stable
+VisualStudioVersion = 18.4.11626.88
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Domain.Core", "src\Domain.Core\Domain.Core.csproj", "{673218E7-1416-40DC-8363-DF581235BDDD}"
 EndProject
@@ -30,10 +30,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UI.API", "src\UI.API\UI.API.csproj", "{8F37E14F-B61C-4E28-9687-BF4D28488912}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E4367103-8E9D-4084-B717-DC9140874625}"
-	ProjectSection(SolutionItems) = preProject
-		LICENSE = LICENSE
-		README.md = README.md
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "cloud", "cloud", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 	ProjectSection(SolutionItems) = preProject
@@ -116,6 +112,24 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unit.Tests", "src\Tests\Unitary\Domain.Unit.Tests\Unit.Tests.csproj", "{E4A67446-C20D-F3B6-C7AF-1FDC245515BE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgentInfrastructure", "src\AgentInfrastructure\AgentInfrastructure.csproj", "{3DDB4631-926D-4B6B-BB33-0652EF51529E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "openai", "openai", "{9247905D-B726-44F0-AE79-4CAC7DF67C66}"
+	ProjectSection(SolutionItems) = preProject
+		platform\cloud\modules\openai\main.tf = platform\cloud\modules\openai\main.tf
+		platform\cloud\modules\openai\outputs.tf = platform\cloud\modules\openai\outputs.tf
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "search", "search", "{9234BE0E-DFE4-4622-8948-B8462579869F}"
+	ProjectSection(SolutionItems) = preProject
+		platform\cloud\modules\search\main.tf = platform\cloud\modules\search\main.tf
+		platform\cloud\modules\search\outputs.tf = platform\cloud\modules\search\outputs.tf
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sql", "sql", "{EF024AB2-6D72-494F-89E3-F420675D8102}"
+	ProjectSection(SolutionItems) = preProject
+		platform\cloud\modules\sql\main.tf = platform\cloud\modules\sql\main.tf
+		platform\cloud\modules\sql\outputs.tf = platform\cloud\modules\sql\outputs.tf
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -289,6 +303,9 @@ Global
 		{10D3DF3D-EAA6-4DD6-81FC-F6530173D928} = {B4453566-F7A3-47E2-A414-0914A303D533}
 		{E4A67446-C20D-F3B6-C7AF-1FDC245515BE} = {006E4254-9675-483A-BA71-E891043C7A93}
 		{3DDB4631-926D-4B6B-BB33-0652EF51529E} = {3E2923AF-6A2B-42C6-B1E5-0521C068E4B2}
+		{9247905D-B726-44F0-AE79-4CAC7DF67C66} = {B4453566-F7A3-47E2-A414-0914A303D533}
+		{9234BE0E-DFE4-4622-8948-B8462579869F} = {B4453566-F7A3-47E2-A414-0914A303D533}
+		{EF024AB2-6D72-494F-89E3-F420675D8102} = {B4453566-F7A3-47E2-A414-0914A303D533}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7028607C-5504-4BEF-B18F-0C324D8E0F3F}

@@ -19,6 +19,7 @@ COPY ["src/Domain.Core/Domain.Core.csproj", "src/Domain.Core/"]
 COPY ["src/Identity/Identity.csproj", "src/Identity/"]
 COPY ["src/Util/Util.csproj", "src/Util/"]
 COPY ["src/IoC/IoC.csproj", "src/IoC/"]
+COPY ["src/AgentInfrastructure/AgentInfrastructure.csproj", "src/AgentInfrastructure/"]
 COPY ["src/Services/Services.csproj", "src/Services/"]
 RUN dotnet restore "./src/UI.API/UI.API.csproj"
 COPY . .

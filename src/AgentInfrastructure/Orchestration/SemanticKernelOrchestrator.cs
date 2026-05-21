@@ -47,6 +47,7 @@ namespace AgentInfrastructure.Orchestration
             _user = user;
         }
 
+
         public IReadOnlyList<AgentOptions> GetRegisteredAgents() =>
             _options.Agents.AsReadOnly();
 
@@ -103,7 +104,7 @@ namespace AgentInfrastructure.Orchestration
 
             try
             {
-                var routerKernel = AgentKernelFactory.Create(routerConfig, _options);
+                var routerKernel = await AgentKernelFactory.CreateAsync(routerConfig, _options);
                 var chatService = routerKernel.GetRequiredService<IChatCompletionService>();
 
                 var classifierHistory = new ChatHistory(systemPrompt);
@@ -198,7 +199,7 @@ namespace AgentInfrastructure.Orchestration
             if (historyResult.IsFailure)
                 return Result<AgentResponse>.Failure(historyResult.Errors.ToArray());
 
-            var kernel = AgentKernelFactory.Create(agentConfig, _options);
+            var kernel = await AgentKernelFactory.CreateAsync(agentConfig, _options);
 
             var documentSearchPlugins = new System.Collections.Generic.HashSet<string>();
             foreach (var pluginName in agentConfig.Plugins)
@@ -320,7 +321,7 @@ namespace AgentInfrastructure.Orchestration
 
             try
             {
-                var reviewerKernel = AgentKernelFactory.Create(reviewerConfig, _options);
+                var reviewerKernel = await AgentKernelFactory.CreateAsync(reviewerConfig, _options);
                 var chatService = reviewerKernel.GetRequiredService<IChatCompletionService>();
 
                 var reviewerHistory = new ChatHistory(reviewerConfig.SystemPrompt ?? string.Empty);

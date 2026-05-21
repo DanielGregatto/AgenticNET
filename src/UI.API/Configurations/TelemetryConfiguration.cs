@@ -17,15 +17,12 @@ namespace UI.API.Configurations
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            var instrumentationKey = configuration["ApplicationInsights:InstrumentationKey"];
             var connectionString = configuration["ApplicationInsights:ConnectionString"];
 
-            if (!string.IsNullOrEmpty(instrumentationKey) &&
-               !string.IsNullOrEmpty(connectionString))
+            if (!string.IsNullOrEmpty(connectionString))
             {
                 services.AddApplicationInsightsTelemetry(options =>
                 {
-                    options.InstrumentationKey = instrumentationKey;
                     options.ConnectionString = connectionString;
                 });
             }
@@ -41,7 +38,6 @@ namespace UI.API.Configurations
             IConfiguration configuration,
             IHostEnvironment environment)
         {
-            var instrumentationKey = configuration["ApplicationInsights:InstrumentationKey"];
             var connectionString = configuration["ApplicationInsights:ConnectionString"];
 
             // Clear default providers
@@ -58,8 +54,7 @@ namespace UI.API.Configurations
             logging.AddDebug();
 
             // Add Application Insights logging provider (if configured)
-            if (!string.IsNullOrEmpty(instrumentationKey) &&
-               !string.IsNullOrEmpty(connectionString))
+            if (!string.IsNullOrEmpty(connectionString))
             {
                 logging.AddApplicationInsights();
 

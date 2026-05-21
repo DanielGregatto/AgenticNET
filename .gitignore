@@ -17,9 +17,6 @@
 *.claude
 *.claude/
 
-# Migrations
-Migrations/
-
 # Mono auto generated files
 mono_crash.*
 
@@ -372,10 +369,9 @@ FodyWeavers.xsd
 # AI Assistant Documentation (local development only)
 CLAUDE.md
 
-# Configuration files with sensitive data
-appsettings.Development.json
-appsettings.Production.json
-appsettings.*.json
-!appsettings.json
-/src/UI.API/appsettings.Production.json.example
-/platform/cloud/.terraform
+.terraform/
+
+# Local development secrets — never commit
+**/appsettings.Development.json
+**/appsettings.Local.json
+secrets.json
