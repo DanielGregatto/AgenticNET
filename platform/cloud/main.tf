@@ -157,7 +157,6 @@ module "api" {
   sql_database_name = module.sql.database_name
 
   openai_endpoint  = module.openai.endpoint
-  chat_deployment  = module.openai.chat_deployment
 
   embedding_endpoint  = module.openai.endpoint
   embedding_deployment = module.openai.embedding_deployment

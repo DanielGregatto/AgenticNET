@@ -9,7 +9,6 @@ variable "aspnetcore_environment"       { type = string }
 variable "sql_server_fqdn"              { type = string }
 variable "sql_database_name"            { type = string }
 variable "openai_endpoint"              { type = string }
-variable "chat_deployment"              { type = string }
 variable "embedding_endpoint"           { type = string }
 variable "embedding_deployment"         { type = string }
 variable "search_endpoint"              { type = string }
@@ -97,11 +96,6 @@ resource "azurerm_container_app" "this" {
       env {
         name  = "AgentOrchestration__Providers__AzureOpenAI__Endpoint"
         value = var.openai_endpoint
-      }
-
-      env {
-        name  = "AgentOrchestration__DefaultDeployment"
-        value = var.chat_deployment
       }
 
       env {
