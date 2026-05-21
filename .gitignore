@@ -378,3 +378,4 @@ appsettings.Production.json
 appsettings.*.json
 !appsettings.json
 /src/UI.API/appsettings.Production.json.example
+/platform/cloud/.terraform
