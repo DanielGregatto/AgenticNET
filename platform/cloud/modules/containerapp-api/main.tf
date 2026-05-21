@@ -144,6 +144,7 @@ resource "azurerm_container_app" "this" {
     ignore_changes = [
       template[0].container[0].image,
       template[0].revision_suffix,
+      workload_profile_name,
     ]
   }
 }
