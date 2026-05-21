@@ -5,6 +5,10 @@ variable "resource_group_name" { type = string }
 variable "aad_admin_login"     { type = string }
 variable "aad_admin_object_id" { type = string }
 variable "uami_principal_id"   { type = string }
+variable "name_suffix" {
+  type    = string
+  default = ""
+}
 variable "tags" {
   type    = map(string)
   default = {}
@@ -31,6 +35,7 @@ variable "auto_pause_delay_in_minutes" {
 }
 
 locals {
+  suffix     = var.name_suffix != "" ? "-${var.name_suffix}" : ""
   db_name    = var.database_name != "" ? var.database_name : "${var.project_name}-${var.environment}"
   serverless = startswith(var.sku_name, "GP_S_")
 }
@@ -42,7 +47,7 @@ resource "random_password" "sql_admin" {
 }
 
 resource "azurerm_mssql_server" "this" {
-  name                         = "sql-${var.environment}-${var.project_name}"
+  name                         = "sql-${var.environment}-${var.project_name}${local.suffix}"
   resource_group_name          = var.resource_group_name
   location                     = var.location
   version                      = "12.0"

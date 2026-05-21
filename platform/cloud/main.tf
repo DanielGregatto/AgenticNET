@@ -17,17 +17,19 @@
 // (db_owner required — app runs EF Core migrations which need DDL permissions)
 
 locals {
-  tags = merge({
+  tags         = merge({
     environment = var.environment
     project     = var.project_name
     managed_by  = "terraform"
   }, var.tags)
+  sql_location = var.sql_location != "" ? var.sql_location : var.location
 }
 
 module "rg" {
   source       = "./modules/rg"
   environment  = var.environment
   project_name = var.project_name
+  name_suffix  = var.name_suffix
   location     = var.location
   tags         = local.tags
 }
@@ -47,6 +49,7 @@ module "storage" {
   project_name        = var.project_name
   location            = module.rg.location
   resource_group_name = module.rg.name
+  name_suffix         = var.name_suffix
   tags                = local.tags
 }
 
@@ -56,6 +59,7 @@ module "acr" {
   project_name        = var.project_name
   location            = module.rg.location
   resource_group_name = module.rg.name
+  name_suffix         = var.name_suffix
   tags                = local.tags
 }
 
@@ -85,6 +89,7 @@ module "openai" {
   project_name        = var.project_name
   location            = var.openai_location
   resource_group_name = module.rg.name
+  name_suffix         = var.name_suffix
 
   chat_deployment_name      = var.chat_deployment_name
   chat_model_name           = var.chat_model_name
@@ -102,6 +107,7 @@ module "search" {
   project_name        = var.project_name
   location            = module.rg.location
   resource_group_name = module.rg.name
+  name_suffix         = var.name_suffix
   sku                 = var.search_sku
   tags                = local.tags
 }
@@ -128,8 +134,9 @@ module "sql" {
   source              = "./modules/sql"
   environment         = var.environment
   project_name        = var.project_name
-  location            = module.rg.location
+  location            = local.sql_location
   resource_group_name = module.rg.name
+  name_suffix         = var.name_suffix
   database_name               = var.sql_database_name
   sku_name                    = var.sql_sku
   min_capacity                = var.sql_min_capacity

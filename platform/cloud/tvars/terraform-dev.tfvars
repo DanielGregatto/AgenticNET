@@ -1,10 +1,12 @@
 environment            = "dev"
+name_suffix            = "051434"
 project_name           = "agenticnet"
 aspnetcore_environment = "Development"
-location               = "brazilsouth"
+location               = "eastus2"
 openai_location        = "eastus2"
+sql_location           = "westus"
 
-sql_database_name               = "agenticnet-dev"
+sql_database_name               = "agenticnet"
 sql_sku                         = "GP_S_Gen5_1"
 sql_min_capacity                = 0.5
 sql_auto_pause_delay_in_minutes = 15

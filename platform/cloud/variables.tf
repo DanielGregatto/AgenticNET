@@ -3,6 +3,12 @@ variable "environment" {
   default = "dev"
 }
 
+variable "name_suffix" {
+  type        = string
+  default     = ""
+  description = "Short unique suffix appended to globally unique resource names (storage, ACR, SQL, OpenAI, search). Required when deploying to a shared subscription. Example: 'abc123'"
+}
+
 variable "project_name" {
   type    = string
   default = "agenticnet"
@@ -17,6 +23,12 @@ variable "location" {
 variable "openai_location" {
   type    = string
   default = "eastus2"
+}
+
+# SQL Server provisioning is restricted in some regions — override if needed
+variable "sql_location" {
+  type    = string
+  default = ""
 }
 
 variable "aspnetcore_environment" {

@@ -1,9 +1,11 @@
 using Data.Context;
 using Identity;
 using Identity.Context;
+using Identity.Model;
 using IoC;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using UI.API.Configurations;
 using UI.API.Middleware;
@@ -12,7 +14,7 @@ namespace UI.API
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -133,6 +135,28 @@ namespace UI.API
                     migrationLogger.LogInformation("Applying AppIdentityDbContext migrations...");
                     scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>().Database.Migrate();
                     migrationLogger.LogInformation("Migrations applied successfully.");
+
+                    var seedEmail = app.Configuration["Application:SeedUser:Email"];
+                    var seedPassword = app.Configuration["Application:SeedUser:Password"];
+                    if (!string.IsNullOrEmpty(seedEmail) && !string.IsNullOrEmpty(seedPassword))
+                    {
+                        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+                        if (!userManager.Users.Any())
+                        {
+                            var seedUser = new ApplicationUser
+                            {
+                                UserName = seedEmail,
+                                Email = seedEmail,
+                                EmailConfirmed = true,
+                                FullName = "Test User"
+                            };
+                            var result = await userManager.CreateAsync(seedUser, seedPassword);
+                            if (result.Succeeded)
+                                migrationLogger.LogInformation("Seed user {Email} created.", seedEmail);
+                            else
+                                migrationLogger.LogWarning("Seed user creation failed: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {

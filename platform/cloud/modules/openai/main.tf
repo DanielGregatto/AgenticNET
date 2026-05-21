@@ -2,9 +2,17 @@ variable "environment"         { type = string }
 variable "project_name"        { type = string }
 variable "location"            { type = string }
 variable "resource_group_name" { type = string }
+variable "name_suffix" {
+  type    = string
+  default = ""
+}
 variable "tags" {
   type    = map(string)
   default = {}
+}
+
+locals {
+  suffix = var.name_suffix != "" ? "-${var.name_suffix}" : ""
 }
 
 variable "chat_deployment_name" {
@@ -48,13 +56,13 @@ variable "embedding_capacity" {
 }
 
 resource "azurerm_cognitive_account" "this" {
-  name                = "oai-${var.environment}-${var.project_name}"
+  name                = "oai-${var.environment}-${var.project_name}${local.suffix}"
   resource_group_name = var.resource_group_name
   location            = var.location
   kind                = "OpenAI"
   sku_name            = "S0"
 
-  custom_subdomain_name         = "oai-${var.environment}-${var.project_name}"
+  custom_subdomain_name         = "oai-${var.environment}-${var.project_name}${local.suffix}"
   local_auth_enabled            = false
   public_network_access_enabled = true
   tags                          = var.tags

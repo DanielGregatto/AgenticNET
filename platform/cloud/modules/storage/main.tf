@@ -2,13 +2,17 @@ variable "environment"         { type = string }
 variable "project_name"        { type = string }
 variable "location"            { type = string }
 variable "resource_group_name" { type = string }
+variable "name_suffix" {
+  type    = string
+  default = ""
+}
 variable "tags" {
   type    = map(string)
   default = {}
 }
 
 locals {
-  storage_app_name = "str${var.environment}${var.project_name}"
+  storage_app_name = "str${var.environment}${var.project_name}${var.name_suffix}"
 }
 
 resource "azurerm_storage_account" "this" {
