@@ -1,5 +1,4 @@
 environment            = "dev"
-name_suffix            = "051434"
 project_name           = "agenticnet"
 aspnetcore_environment = "Development"
 location               = "eastus2"
