@@ -1,0 +1,92 @@
+name: Deploy Prod
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform:
+    name: Terraform Apply (prod)
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      acr_login_server: ${{ steps.tf-outputs.outputs.acr_login_server }}
+      container_app_name: ${{ steps.tf-outputs.outputs.container_app_name }}
+      resource_group_name: ${{ steps.tf-outputs.outputs.resource_group_name }}
+    env:
+      ARM_USE_OIDC: "true"
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Terraform Init
+        run: |
+          terraform -chdir=platform/cloud init \
+            -backend-config="resource_group_name=rg-terraform-agenticnet-core" \
+            -backend-config="storage_account_name=stterraformagnet${{ secrets.TF_BACKEND_SUFFIX }}" \
+            -backend-config="container_name=tfstate-prod" \
+            -backend-config="key=agenticnet-prod.tfstate"
+
+      - name: Terraform Apply
+        run: |
+          terraform -chdir=platform/cloud apply -auto-approve \
+            -var-file=tvars/terraform-prod.tfvars \
+            -var="name_suffix=${{ secrets.TF_NAME_SUFFIX }}" \
+            -var="sql_aad_admin_login=${{ secrets.SQL_AAD_ADMIN_LOGIN }}" \
+            -var="sql_aad_admin_object_id=${{ secrets.SQL_AAD_ADMIN_OBJECT_ID }}"
+
+      - name: Capture Terraform Outputs
+        id: tf-outputs
+        run: |
+          echo "acr_login_server=$(terraform -chdir=platform/cloud output -raw acr_login_server)" >> $GITHUB_OUTPUT
+          echo "container_app_name=$(terraform -chdir=platform/cloud output -raw container_app_name)" >> $GITHUB_OUTPUT
+          echo "resource_group_name=$(terraform -chdir=platform/cloud output -raw resource_group_name)" >> $GITHUB_OUTPUT
+
+  build-and-deploy:
+    name: Build & Deploy (prod)
+    runs-on: ubuntu-latest
+    needs: terraform
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to ACR
+        run: az acr login --name ${{ needs.terraform.outputs.acr_login_server }}
+
+      - name: Build & Push Docker Image
+        env:
+          IMAGE: ${{ needs.terraform.outputs.acr_login_server }}/agenticnet:${{ github.sha }}
+        run: |
+          docker build -t "$IMAGE" -f src/UI.API/Dockerfile .
+          docker push "$IMAGE"
+
+      - name: Deploy to Container App
+        run: |
+          az containerapp update \
+            --name "${{ needs.terraform.outputs.container_app_name }}" \
+            --resource-group "${{ needs.terraform.outputs.resource_group_name }}" \
+            --image "${{ needs.terraform.outputs.acr_login_server }}/agenticnet:${{ github.sha }}"
