@@ -170,9 +170,10 @@ Write-Host "  * Storage Blob Data Contributor on $TfStateSA -- lets Terraform re
 Write-Host ""
 Write-Host "  GitHub:"
 Write-Host "  * Environment '$GitHubEnvName' (created if it does not exist)"
-Write-Host "  * 6 environment secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID,"
-Write-Host "    SQL_AAD_ADMIN_LOGIN, SQL_AAD_ADMIN_OBJECT_ID, TF_NAME_SUFFIX ($NameSuffix)"
-Write-Host "  * 1 repo-level secret: TF_BACKEND_SUFFIX ($TfBackendSuffix) -- shared between dev and prod"
+Write-Host "  * 5 environment secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID,"
+Write-Host "    SQL_AAD_ADMIN_LOGIN, SQL_AAD_ADMIN_OBJECT_ID"
+Write-Host "  * 1 environment variable: TF_NAME_SUFFIX ($NameSuffix) -- non-sensitive, visible in logs"
+Write-Host "  * 1 repo-level variable: TF_BACKEND_SUFFIX ($TfBackendSuffix) -- shared between dev and prod"
 Write-Host ""
 $Confirm = Read-Host "  Proceed? [y/N]"
 if ($Confirm.ToLower() -ne "y") {
@@ -353,8 +354,9 @@ if ($LASTEXITCODE -eq 0) {
 # ── 6. GitHub Secrets ─────────────────────────────────────────────────────────
 
 Write-Host ""
-Write-Host "-- [7/7] GitHub Secrets --------------------------------------"
-Write-Host "   Setting secrets encrypted at rest, never exposed in logs."
+Write-Host "-- [7/7] GitHub Secrets & Variables --------------------------"
+Write-Host "   Secrets: sensitive values, encrypted at rest, never exposed in logs."
+Write-Host "   Variables: non-sensitive config, readable in logs (used for resource name suffixes)."
 Write-Host ""
 Write-Host "   Environment secrets (visible only to the '$GitHubEnvName' pipeline):"
 
@@ -370,16 +372,31 @@ function Set-RepoSecret($Name, $Value) {
     if ($LASTEXITCODE -eq 0) { Write-Host "   OK $Name" } else { Write-Host "   FAILED $Name" }
 }
 
+function Set-EnvVariable($Name, $Value) {
+    if (-not $Value) { Write-Host "   SKIP $Name -- value is empty"; return }
+    gh variable set $Name --repo $GitHubRepo --env $GitHubEnvName --body $Value
+    if ($LASTEXITCODE -eq 0) { Write-Host "   OK $Name (variable)" } else { Write-Host "   FAILED $Name" }
+}
+
+function Set-RepoVariable($Name, $Value) {
+    if (-not $Value) { Write-Host "   SKIP $Name -- value is empty"; return }
+    gh variable set $Name --repo $GitHubRepo --body $Value
+    if ($LASTEXITCODE -eq 0) { Write-Host "   OK $Name (variable)" } else { Write-Host "   FAILED $Name" }
+}
+
 Set-EnvSecret "AZURE_CLIENT_ID"         $AppId
 Set-EnvSecret "AZURE_TENANT_ID"         $TenantId
 Set-EnvSecret "AZURE_SUBSCRIPTION_ID"   $SubscriptionId
 Set-EnvSecret "SQL_AAD_ADMIN_LOGIN"     $CurrentAzureUser
 Set-EnvSecret "SQL_AAD_ADMIN_OBJECT_ID" $SqlObjectId
-Set-EnvSecret "TF_NAME_SUFFIX"          $NameSuffix
 
 Write-Host ""
-Write-Host "   Repo-level secret (shared between dev and prod pipelines):"
-Set-RepoSecret "TF_BACKEND_SUFFIX" $TfBackendSuffix
+Write-Host "   Environment variables (non-sensitive, used as resource name suffix):"
+Set-EnvVariable "TF_NAME_SUFFIX" $NameSuffix
+
+Write-Host ""
+Write-Host "   Repo-level variable (shared between dev and prod pipelines):"
+Set-RepoVariable "TF_BACKEND_SUFFIX" $TfBackendSuffix
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 
@@ -397,9 +414,10 @@ Write-Host "  * Roles            : Contributor (subscription), Blob Data Contrib
 Write-Host ""
 Write-Host "  Created in GitHub:"
 Write-Host "  * Environment        : $GitHubEnvName"
-Write-Host "  * Environment secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID,"
-Write-Host "                         SQL_AAD_ADMIN_LOGIN, SQL_AAD_ADMIN_OBJECT_ID, TF_NAME_SUFFIX ($NameSuffix)"
-Write-Host "  * Repo-level secret  : TF_BACKEND_SUFFIX ($TfBackendSuffix)"
+Write-Host "  * Environment secrets  : AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID,"
+Write-Host "                           SQL_AAD_ADMIN_LOGIN, SQL_AAD_ADMIN_OBJECT_ID"
+Write-Host "  * Environment variable : TF_NAME_SUFFIX ($NameSuffix)"
+Write-Host "  * Repo-level variable  : TF_BACKEND_SUFFIX ($TfBackendSuffix)"
 Write-Host ""
 Write-Host "  Verify at: https://github.com/$GitHubRepo/settings/environments"
 Write-Host ""

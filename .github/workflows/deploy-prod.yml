@@ -40,7 +40,7 @@ jobs:
         run: |
           terraform -chdir=platform/cloud init \
             -backend-config="resource_group_name=rg-terraform-agenticnet-core" \
-            -backend-config="storage_account_name=stterraformagnet${{ secrets.TF_BACKEND_SUFFIX }}" \
+            -backend-config="storage_account_name=stterraformagnet${{ vars.TF_BACKEND_SUFFIX }}" \
             -backend-config="container_name=tfstate-prod" \
             -backend-config="key=agenticnet-prod.tfstate"
 
@@ -48,7 +48,7 @@ jobs:
         run: |
           terraform -chdir=platform/cloud apply -auto-approve \
             -var-file=tvars/terraform-prod.tfvars \
-            -var="name_suffix=${{ secrets.TF_NAME_SUFFIX }}" \
+            -var="name_suffix=${{ vars.TF_NAME_SUFFIX }}" \
             -var="sql_aad_admin_login=${{ secrets.SQL_AAD_ADMIN_LOGIN }}" \
             -var="sql_aad_admin_object_id=${{ secrets.SQL_AAD_ADMIN_OBJECT_ID }}"
 
