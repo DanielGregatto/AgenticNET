@@ -1,4 +1,5 @@
-environment            = "dev"
+﻿environment            = "dev"
+sql_local_dev_ip       = "187.34.48.27" # set by setup-azure.ps1
 project_name           = "agenticnet"
 aspnetcore_environment = "Development"
 location               = "eastus2"

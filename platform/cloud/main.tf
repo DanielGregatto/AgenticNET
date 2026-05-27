@@ -146,6 +146,7 @@ module "sql" {
   aad_admin_login     = var.sql_aad_admin_login
   aad_admin_object_id = var.sql_aad_admin_object_id
   uami_principal_id   = module.identity_acr_pull.principal_id
+  local_dev_ip        = var.sql_local_dev_ip
 
   depends_on = [module.identity_acr_pull]
 }

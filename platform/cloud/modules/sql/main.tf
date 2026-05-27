@@ -9,6 +9,12 @@ variable "name_suffix" {
   type    = string
   default = ""
 }
+variable "local_dev_ip" {
+  type        = string
+  default     = ""
+  description = "Developer's public IP added to the SQL firewall so local tools can connect. Set by setup-azure.ps1."
+}
+
 variable "tags" {
   type    = map(string)
   default = {}
@@ -84,4 +90,12 @@ resource "azurerm_mssql_firewall_rule" "azure_services" {
   server_id        = azurerm_mssql_server.this.id
   start_ip_address = "0.0.0.0"
   end_ip_address   = "0.0.0.0"
+}
+
+resource "azurerm_mssql_firewall_rule" "local_dev" {
+  count            = var.local_dev_ip != "" ? 1 : 0
+  name             = "LocalDev"
+  server_id        = azurerm_mssql_server.this.id
+  start_ip_address = var.local_dev_ip
+  end_ip_address   = var.local_dev_ip
 }

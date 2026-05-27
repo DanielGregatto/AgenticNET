@@ -48,6 +48,12 @@ variable "sql_database_name" {
   default = ""
 }
 
+variable "sql_local_dev_ip" {
+  type        = string
+  default     = ""
+  description = "Developer's public IP to whitelist in the SQL firewall. Written by setup-azure.ps1."
+}
+
 variable "sql_aad_admin_login" {
   type        = string
   description = "AAD login (email) of the SQL server administrator. Used to grant interactive access for running migrations and management queries."

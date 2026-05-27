@@ -146,6 +146,27 @@ $TfBackendSuffix = $NameSuffix
     Set-Content $BackendFile -Encoding utf8
 Write-Host "  Updated $(Split-Path $BackendFile -Leaf) -> storage_account_name = `"$TfStateSA`""
 
+# Detect developer's public IP and write it into the tfvars so Terraform
+# creates a SQL firewall rule automatically on the next 'terraform apply'.
+$LocalDevIp = $null
+try {
+    $LocalDevIp = (Invoke-RestMethod -Uri "https://api.ipify.org" -TimeoutSec 5).Trim()
+} catch {}
+
+if ($LocalDevIp) {
+    $TfVarsContent = Get-Content $TfVarsFile -Raw
+    if ($TfVarsContent -match 'sql_local_dev_ip\s*=') {
+        $TfVarsContent = $TfVarsContent -replace 'sql_local_dev_ip\s*=\s*"[^"]*"[^\n]*', "sql_local_dev_ip       = `"$LocalDevIp`" # set by setup-azure.ps1"
+    } else {
+        $TfVarsContent = $TfVarsContent.TrimEnd() + "`nsql_local_dev_ip       = `"$LocalDevIp`" # set by setup-azure.ps1`n"
+    }
+    Set-Content -Path $TfVarsFile -Value $TfVarsContent -Encoding utf8 -NoNewline
+    Write-Host "  Updated $(Split-Path $TfVarsFile -Leaf) -> sql_local_dev_ip = `"$LocalDevIp`""
+} else {
+    Write-Host "  Could not detect public IP -- sql_local_dev_ip left empty in tfvars."
+    Write-Host "  After deploy, run: az sql server firewall-rule create --resource-group rg-$Env-agenticnet-$NameSuffix --server sql-$Env-agenticnet-$NameSuffix --name LocalDev --start-ip-address <YOUR_IP> --end-ip-address <YOUR_IP>"
+}
+
 $AppName     = "agenticnet-github-$Env"
 $OidcSubject = "repo:${GitHubRepo}:environment:${GitHubEnvName}"
 
@@ -156,6 +177,9 @@ Write-Host "=========================================================="
 Write-Host "  AgenticNET OIDC Setup -- environment: $Env"
 Write-Host "  The following resources will be created in the next steps:"
 Write-Host "=========================================================="
+Write-Host ""
+Write-Host "  tfvars update:"
+Write-Host "  * sql_local_dev_ip -> your current public IP (Terraform creates SQL firewall rule automatically)"
 Write-Host ""
 Write-Host "  Terraform backend storage:"
 Write-Host "  * Resource group '$TfStateRG' in $TfStateLocation (created if it does not exist)"
