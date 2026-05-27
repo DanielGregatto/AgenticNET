@@ -17,12 +17,13 @@
 // (db_owner required — app runs EF Core migrations which need DDL permissions)
 
 locals {
-  tags         = merge({
+  tags            = merge({
     environment = var.environment
     project     = var.project_name
     managed_by  = "terraform"
   }, var.tags)
-  sql_location = var.sql_location != "" ? var.sql_location : var.location
+  sql_location    = var.sql_location    != "" ? var.sql_location    : var.location
+  search_location = var.search_location != "" ? var.search_location : var.location
 }
 
 module "rg" {
@@ -105,7 +106,7 @@ module "search" {
   source              = "./modules/search"
   environment         = var.environment
   project_name        = var.project_name
-  location            = module.rg.location
+  location            = local.search_location
   resource_group_name = module.rg.name
   name_suffix         = var.name_suffix
   sku                 = var.search_sku

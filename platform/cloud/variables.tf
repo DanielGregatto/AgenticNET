@@ -31,6 +31,12 @@ variable "sql_location" {
   default = ""
 }
 
+# AI Search availability varies by region — override if needed
+variable "search_location" {
+  type    = string
+  default = ""
+}
+
 variable "aspnetcore_environment" {
   type    = string
   default = "Development"

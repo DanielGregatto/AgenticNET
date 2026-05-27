@@ -165,6 +165,7 @@ Write-Host "  Azure (AD + RBAC):"
 Write-Host "  * App Registration '$AppName' -- the identity GitHub Actions will use"
 Write-Host "  * Federated Credential -- trusts tokens from branch '$Branch' in $GitHubRepo only"
 Write-Host "  * Contributor on subscription -- lets Terraform create and manage all resources"
+Write-Host "  * User Access Administrator on subscription -- lets Terraform assign roles to the managed identity"
 Write-Host "  * Storage Blob Data Contributor on $TfStateSA -- lets Terraform read/write state"
 Write-Host ""
 Write-Host "  GitHub:"
@@ -322,6 +323,12 @@ Assign-AzureRole `
     $SubScope `
     "Contributor on subscription" `
     "Terraform needs to create the resource group and all resources inside it. Subscription-level scope avoids a chicken-and-egg problem where the resource group must exist before the role can be assigned to it."
+
+Assign-AzureRole `
+    "User Access Administrator" `
+    $SubScope `
+    "User Access Administrator on subscription" `
+    "Terraform's identity module assigns RBAC roles to the managed identity (AcrPull, OpenAI User, Search Reader, etc.). Contributor alone cannot perform Microsoft.Authorization/roleAssignments/write."
 
 Assign-AzureRole `
     "Storage Blob Data Contributor" `
