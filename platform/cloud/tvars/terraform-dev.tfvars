@@ -19,6 +19,7 @@ embedding_deployment_name = "embeddings"
 embedding_model_name      = "text-embedding-ada-002"
 embedding_model_version   = "2"
 
+search_location     = "eastus"
 search_sku          = "free"
 search_index_name   = "knowledge"
 search_topk         = 5
