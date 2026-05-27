@@ -1,5 +1,5 @@
-# Usage: .\platform\scripts\setup-azure.ps1 dev
-#        .\platform\scripts\setup-azure.ps1 prod
+# Usage: powershell -ExecutionPolicy Bypass -File .\platform\scripts\setup-azure.ps1 dev
+#        powershell -ExecutionPolicy Bypass -File .\platform\scripts\setup-azure.ps1 prod
 #
 # What this script does:
 #   Gives GitHub Actions permission to deploy AgenticNET to Azure without
@@ -85,8 +85,10 @@ function Parse-ConfigValue($File, $Key) {
     if ($line) { return ($line -replace '.*=\s*"(.*)"\s*$', '$1').Trim() }
 }
 
-$TfStateSA = Parse-ConfigValue $BackendFile "storage_account_name"
-$TfStateRG = Parse-ConfigValue $BackendFile "resource_group_name"
+$TfStateRG       = Parse-ConfigValue $BackendFile "resource_group_name"
+$TfContainerName = Parse-ConfigValue $BackendFile "container_name"
+$TfStateLocation = Parse-ConfigValue $TfVarsFile "location"
+if (-not $TfStateLocation) { $TfStateLocation = "eastus2" }
 
 if ($Env -eq "dev") {
     $Branch        = "development"
@@ -124,7 +126,7 @@ Write-Host "  OK Subscription : $SubscriptionName ($SubscriptionId)"
 Write-Host ""
 Write-Host "  Enter the resource name suffix for the '$Env' environment."
 Write-Host "  This is appended to globally unique Azure resource names (ACR, SQL, OpenAI, Search)."
-Write-Host "  Max 6 characters. Use the same value as your bootstrap (e.g. 051434 for dev)."
+Write-Host "  Max 6 characters. Pick any short unique value (e.g. abc123)."
 
 $NameSuffix = ""
 while ($NameSuffix.Length -eq 0 -or $NameSuffix.Length -gt 6) {
@@ -134,11 +136,18 @@ while ($NameSuffix.Length -eq 0 -or $NameSuffix.Length -gt 6) {
     $NameSuffix = Read-Host "  TF_NAME_SUFFIX (max 6 chars)"
 }
 
-# Suffix extracted from the Terraform state storage account name in backend.hcl
-$TfBackendSuffix = $TfStateSA -replace "^stterraformagnet", ""
+# Derive storage account name from suffix and update the backend HCL file so
+# 'terraform init' uses the correct account for this user's deployment.
+$TfStateSA       = "stterraformagnet$NameSuffix"
+$TfBackendSuffix = $NameSuffix
+
+(Get-Content $BackendFile) `
+    -replace 'storage_account_name\s*=\s*"[^"]*"', "storage_account_name = `"$TfStateSA`"" |
+    Set-Content $BackendFile -Encoding utf8
+Write-Host "  Updated $(Split-Path $BackendFile -Leaf) -> storage_account_name = `"$TfStateSA`""
 
 $AppName     = "agenticnet-github-$Env"
-$OidcSubject = "repo:${GitHubRepo}:ref:refs/heads/${Branch}"
+$OidcSubject = "repo:${GitHubRepo}:environment:${GitHubEnvName}"
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 
@@ -147,6 +156,10 @@ Write-Host "=========================================================="
 Write-Host "  AgenticNET OIDC Setup -- environment: $Env"
 Write-Host "  The following resources will be created in the next steps:"
 Write-Host "=========================================================="
+Write-Host ""
+Write-Host "  Terraform backend storage:"
+Write-Host "  * Resource group '$TfStateRG' in $TfStateLocation (created if it does not exist)"
+Write-Host "  * Storage account '$TfStateSA' with container '$TfContainerName' (created if it does not exist)"
 Write-Host ""
 Write-Host "  Azure (AD + RBAC):"
 Write-Host "  * App Registration '$AppName' -- the identity GitHub Actions will use"
@@ -166,10 +179,50 @@ if ($Confirm.ToLower() -ne "y") {
     exit 0
 }
 
-# ── 1. App Registration ───────────────────────────────────────────────────────
+# ── 1. Terraform Backend ──────────────────────────────────────────────────────
 
 Write-Host ""
-Write-Host "-- [1/6] App Registration -----------------------------------"
+Write-Host "-- [1/7] Terraform Backend -----------------------------------"
+Write-Host "   Creating the resource group and storage account that hold"
+Write-Host "   Terraform state. This must exist before 'terraform init' can run."
+Write-Host ""
+
+$ExistingRG = az group show --name $TfStateRG --query name -o tsv 2>$null
+if ($ExistingRG -and $ExistingRG -ne "None") {
+    Write-Host "   Resource group '$TfStateRG' already exists -- skipping."
+} else {
+    az group create --name $TfStateRG --location $TfStateLocation --output none
+    Write-Host "   Created resource group '$TfStateRG' in $TfStateLocation"
+}
+
+$ExistingSA = az storage account show --name $TfStateSA --resource-group $TfStateRG --query name -o tsv 2>$null
+if ($ExistingSA -and $ExistingSA -ne "None") {
+    Write-Host "   Storage account '$TfStateSA' already exists -- skipping."
+} else {
+    az storage account create `
+        --name $TfStateSA `
+        --resource-group $TfStateRG `
+        --location $TfStateLocation `
+        --sku Standard_LRS `
+        --kind StorageV2 `
+        --allow-blob-public-access false `
+        --min-tls-version TLS1_2 `
+        --output none
+    Write-Host "   Created storage account '$TfStateSA'"
+}
+
+$ExistingContainer = az storage container show --name $TfContainerName --account-name $TfStateSA --auth-mode login --query name -o tsv 2>$null
+if ($ExistingContainer -and $ExistingContainer -ne "None") {
+    Write-Host "   Container '$TfContainerName' already exists -- skipping."
+} else {
+    az storage container create --name $TfContainerName --account-name $TfStateSA --auth-mode login --output none
+    Write-Host "   Created blob container '$TfContainerName'"
+}
+
+# ── 2. App Registration ───────────────────────────────────────────────────────
+
+Write-Host ""
+Write-Host "-- [2/7] App Registration -----------------------------------"
 Write-Host "   Creating an identity in Azure AD that GitHub Actions will use."
 Write-Host ""
 
@@ -186,7 +239,7 @@ Write-Host "   App ID: $AppId"
 # ── 2. Service Principal ──────────────────────────────────────────────────────
 
 Write-Host ""
-Write-Host "-- [2/6] Service Principal ----------------------------------"
+Write-Host "-- [3/7] Service Principal ----------------------------------"
 Write-Host "   Linking the App Registration to Azure RBAC so roles can be assigned."
 Write-Host ""
 
@@ -203,19 +256,28 @@ Write-Host "   SP Object ID: $SpObjectId"
 # ── 3. Federated Credential ───────────────────────────────────────────────────
 
 Write-Host ""
-Write-Host "-- [3/6] OIDC Federated Credential --------------------------"
+Write-Host "-- [4/7] OIDC Federated Credential --------------------------"
 Write-Host "   This is the trust rule that makes OIDC work."
-Write-Host "   Azure will only accept GitHub tokens from branch '$Branch'"
-Write-Host "   in repo '$GitHubRepo'. Any other branch or fork is rejected."
+Write-Host "   Azure will only accept GitHub tokens from environment '$GitHubEnvName'"
+Write-Host "   in repo '$GitHubRepo'. Any other environment or fork is rejected."
 Write-Host ""
+
+# Remove stale branch-scoped credential if it exists (created by older versions of this script)
+$OldSubject = "repo:${GitHubRepo}:ref:refs/heads/${Branch}"
+$StaleFed = az ad app federated-credential list --id $AppId `
+    --query "[?subject=='$OldSubject'].id" -o tsv 2>$null
+if ($StaleFed -and $StaleFed -ne "None") {
+    az ad app federated-credential delete --id $AppId --federated-credential-id $StaleFed --output none
+    Write-Host "   Removed stale branch-scoped credential."
+}
 
 $ExistingFed = az ad app federated-credential list --id $AppId `
     --query "[?subject=='$OidcSubject'].id" -o tsv 2>$null
-if ($ExistingFed) {
+if ($ExistingFed -and $ExistingFed -ne "None") {
     Write-Host "   Already exists -- skipping creation."
 } else {
     $FedJson = [ordered]@{
-        name      = "github-$($Branch -replace '/', '-')"
+        name      = "github-env-$GitHubEnvName"
         issuer    = "https://token.actions.githubusercontent.com"
         subject   = $OidcSubject
         audiences = @("api://AzureADTokenExchange")
@@ -232,7 +294,7 @@ Write-Host "   Subject: $OidcSubject"
 # ── 4. Role Assignments ───────────────────────────────────────────────────────
 
 Write-Host ""
-Write-Host "-- [4/6] Role Assignments ------------------------------------"
+Write-Host "-- [5/7] Role Assignments ------------------------------------"
 Write-Host ""
 
 function Assign-AzureRole($Role, $Scope, $Label, $Reason) {
@@ -269,7 +331,7 @@ Assign-AzureRole `
 
 # ── 5. GitHub Environment ─────────────────────────────────────────────────────
 
-Write-Host "-- [5/6] GitHub Environment ----------------------------------"
+Write-Host "-- [6/7] GitHub Environment ----------------------------------"
 Write-Host "   Creating environment '$GitHubEnvName' in $GitHubRepo."
 Write-Host "   The workflow file references this name -- it must exist before the first run."
 Write-Host ""
@@ -284,7 +346,7 @@ if ($LASTEXITCODE -eq 0) {
 # ── 6. GitHub Secrets ─────────────────────────────────────────────────────────
 
 Write-Host ""
-Write-Host "-- [6/6] GitHub Secrets --------------------------------------"
+Write-Host "-- [7/7] GitHub Secrets --------------------------------------"
 Write-Host "   Setting secrets encrypted at rest, never exposed in logs."
 Write-Host ""
 Write-Host "   Environment secrets (visible only to the '$GitHubEnvName' pipeline):"
@@ -320,6 +382,8 @@ Write-Host "  Setup complete for environment: $Env"
 Write-Host "=========================================================="
 Write-Host ""
 Write-Host "  Created in Azure:"
+Write-Host "  * TF backend RG    : $TfStateRG"
+Write-Host "  * TF backend SA    : $TfStateSA (container: $TfContainerName)"
 Write-Host "  * App Registration : $AppName ($AppId)"
 Write-Host "  * Federated trust  : branch '$Branch' in $GitHubRepo"
 Write-Host "  * Roles            : Contributor (subscription), Blob Data Contributor ($TfStateSA)"
