@@ -55,9 +55,12 @@ jobs:
       - name: Capture Terraform Outputs
         id: tf-outputs
         run: |
-          echo "acr_login_server=$(terraform -chdir=platform/cloud output -raw acr_login_server)" >> $GITHUB_OUTPUT
-          echo "container_app_name=$(terraform -chdir=platform/cloud output -raw container_app_name)" >> $GITHUB_OUTPUT
-          echo "resource_group_name=$(terraform -chdir=platform/cloud output -raw resource_group_name)" >> $GITHUB_OUTPUT
+          ACR_LOGIN_SERVER=$(terraform -chdir=platform/cloud output -raw acr_login_server)
+          CONTAINER_APP_NAME=$(terraform -chdir=platform/cloud output -raw container_app_name)
+          RESOURCE_GROUP_NAME=$(terraform -chdir=platform/cloud output -raw resource_group_name)
+          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "container_app_name=$CONTAINER_APP_NAME" >> $GITHUB_OUTPUT
+          echo "resource_group_name=$RESOURCE_GROUP_NAME" >> $GITHUB_OUTPUT
 
   build-and-deploy:
     name: Build & Deploy (prod)
