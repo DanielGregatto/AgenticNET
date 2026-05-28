@@ -84,13 +84,14 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Install mssql-tools18
+      - name: Install SQL ODBC Driver
         run: |
           curl -sSL https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
           curl -sSL "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list" | \
             sudo tee /etc/apt/sources.list.d/mssql-release.list
           sudo apt-get update -q
-          sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18 unixodbc-dev
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
+          pip install pyodbc -q
 
       - name: Grant UAMI DB Access
         env:
@@ -98,19 +99,48 @@ jobs:
           DB_NAME: ${{ needs.terraform.outputs.sql_database_name }}
           UAMI_NAME: ${{ needs.terraform.outputs.uami_name }}
         run: |
-          cat > /tmp/grant_uami.sql << EOF
-          IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '${UAMI_NAME}')
-              CREATE USER [${UAMI_NAME}] FROM EXTERNAL PROVIDER;
-          IF IS_ROLEMEMBER('db_owner', '${UAMI_NAME}') = 0
-              ALTER ROLE [db_owner] ADD MEMBER [${UAMI_NAME}];
-          EOF
+          cat > /tmp/grant_uami.py << 'PYEOF'
+          import pyodbc, struct, os, sys
+
+          server   = os.environ['SQL_FQDN']
+          database = os.environ['DB_NAME']
+          uami     = os.environ['UAMI_NAME']
+          token    = os.environ['SQL_TOKEN']
+
+          # Encode token as UTF-16LE (required by ODBC SQL_COPT_SS_ACCESS_TOKEN)
+          token_bytes = bytes(token, 'UTF-8')
+          expanded = b''
+          for b in token_bytes:
+              expanded += bytes({b}) + bytes(1)
+          token_struct = struct.pack('=i', len(expanded)) + expanded
+
+          conn_str = (
+              "Driver={ODBC Driver 18 for SQL Server};"
+              f"Server=tcp:{server},1433;"
+              f"Database={database};"
+              "Encrypt=yes;TrustServerCertificate=yes;"
+          )
+          conn = pyodbc.connect(conn_str, attrs_before={1256: token_struct})
+          conn.autocommit = True
+          cur = conn.cursor()
+          cur.execute(
+              f"IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '{uami}') "
+              f"    CREATE USER [{uami}] FROM EXTERNAL PROVIDER"
+          )
+          cur.execute(
+              f"IF IS_ROLEMEMBER('db_owner', '{uami}') = 0 "
+              f"    ALTER ROLE [db_owner] ADD MEMBER [{uami}]"
+          )
+          conn.close()
+          print('Grant succeeded.')
+          PYEOF
 
           for attempt in $(seq 1 5); do
             SQL_TOKEN=$(az account get-access-token --resource "https://database.windows.net/" --query accessToken -o tsv)
             echo "::add-mask::$SQL_TOKEN"
-            if SQLCMDACCESSTOKEN="$SQL_TOKEN" /opt/mssql-tools18/bin/sqlcmd \
-                -S "tcp:$SQL_FQDN,1433" -d "$DB_NAME" -C -i /tmp/grant_uami.sql; then
-              echo "Grant succeeded on attempt $attempt."
+            export SQL_TOKEN
+            if python3 /tmp/grant_uami.py; then
+              echo "Grant confirmed on attempt $attempt."
               break
             fi
             if [ "$attempt" -eq 5 ]; then
