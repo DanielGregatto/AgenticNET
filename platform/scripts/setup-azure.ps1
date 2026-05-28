@@ -191,6 +191,8 @@ Write-Host "  * Federated Credential -- trusts tokens from branch '$Branch' in $
 Write-Host "  * Contributor on subscription -- lets Terraform create and manage all resources"
 Write-Host "  * User Access Administrator on subscription -- lets Terraform assign roles to the managed identity"
 Write-Host "  * Storage Blob Data Contributor on $TfStateSA -- lets Terraform read/write state"
+Write-Host "  * AAD group 'sql-admins-$Env-agenticnet' with you + CI/CD SP as members"
+Write-Host "    (set as SQL AAD admin -- both local dev and CI/CD can run the UAMI grant)"
 Write-Host ""
 Write-Host "  GitHub:"
 Write-Host "  * Environment '$GitHubEnvName' (created if it does not exist)"
@@ -208,7 +210,7 @@ if ($Confirm.ToLower() -ne "y") {
 # ── 1. Terraform Backend ──────────────────────────────────────────────────────
 
 Write-Host ""
-Write-Host "-- [1/7] Terraform Backend -----------------------------------"
+Write-Host "-- [1/8] Terraform Backend -----------------------------------"
 Write-Host "   Creating the resource group and storage account that hold"
 Write-Host "   Terraform state. This must exist before 'terraform init' can run."
 Write-Host ""
@@ -248,7 +250,7 @@ if ($ExistingContainer -and $ExistingContainer -ne "None") {
 # ── 2. App Registration ───────────────────────────────────────────────────────
 
 Write-Host ""
-Write-Host "-- [2/7] App Registration -----------------------------------"
+Write-Host "-- [2/8] App Registration -----------------------------------"
 Write-Host "   Creating an identity in Azure AD that GitHub Actions will use."
 Write-Host ""
 
@@ -265,7 +267,7 @@ Write-Host "   App ID: $AppId"
 # ── 2. Service Principal ──────────────────────────────────────────────────────
 
 Write-Host ""
-Write-Host "-- [3/7] Service Principal ----------------------------------"
+Write-Host "-- [3/8] Service Principal ----------------------------------"
 Write-Host "   Linking the App Registration to Azure RBAC so roles can be assigned."
 Write-Host ""
 
@@ -279,10 +281,49 @@ if ($ExistingSp -and $ExistingSp -ne "None") {
 }
 Write-Host "   SP Object ID: $SpObjectId"
 
-# ── 3. Federated Credential ───────────────────────────────────────────────────
+# ── 4. SQL Admin Group ────────────────────────────────────────────────────────
+
+$SqlGroupName = "sql-admins-$Env-agenticnet"
 
 Write-Host ""
-Write-Host "-- [4/7] OIDC Federated Credential --------------------------"
+Write-Host "-- [4/8] SQL Admin Group -------------------------------------"
+Write-Host "   Azure SQL supports one AAD admin. A group lets both you (local dev)"
+Write-Host "   and the CI/CD SP (GitHub Actions) act as SQL admin independently."
+Write-Host ""
+
+$ExistingGroupId = az ad group list --display-name $SqlGroupName --query "[0].id" -o tsv 2>$null
+if ($ExistingGroupId -and $ExistingGroupId -ne "None") {
+    $SqlGroupObjectId = $ExistingGroupId
+    Write-Host "   Group '$SqlGroupName' already exists -- skipping creation."
+} else {
+    $SqlGroupObjectId = az ad group create `
+        --display-name $SqlGroupName `
+        --mail-nickname $SqlGroupName `
+        --query id -o tsv
+    Write-Host "   Created group '$SqlGroupName'"
+}
+Write-Host "   Group ID: $SqlGroupObjectId"
+
+$DevInGroup = az ad group member check --group $SqlGroupObjectId --member-id $SqlObjectId --query value -o tsv 2>$null
+if ($DevInGroup -eq "true") {
+    Write-Host "   Developer already in group -- skipping."
+} else {
+    az ad group member add --group $SqlGroupObjectId --member-id $SqlObjectId --output none
+    Write-Host "   Added developer ($CurrentAzureUser)"
+}
+
+$SpInGroup = az ad group member check --group $SqlGroupObjectId --member-id $SpObjectId --query value -o tsv 2>$null
+if ($SpInGroup -eq "true") {
+    Write-Host "   CI/CD SP already in group -- skipping."
+} else {
+    az ad group member add --group $SqlGroupObjectId --member-id $SpObjectId --output none
+    Write-Host "   Added CI/CD SP ($AppName)"
+}
+
+# ── 5. Federated Credential ───────────────────────────────────────────────────
+
+Write-Host ""
+Write-Host "-- [5/8] OIDC Federated Credential --------------------------"
 Write-Host "   This is the trust rule that makes OIDC work."
 Write-Host "   Azure will only accept GitHub tokens from environment '$GitHubEnvName'"
 Write-Host "   in repo '$GitHubRepo'. Any other environment or fork is rejected."
@@ -320,7 +361,7 @@ Write-Host "   Subject: $OidcSubject"
 # ── 4. Role Assignments ───────────────────────────────────────────────────────
 
 Write-Host ""
-Write-Host "-- [5/7] Role Assignments ------------------------------------"
+Write-Host "-- [6/8] Role Assignments ------------------------------------"
 Write-Host ""
 
 function Assign-AzureRole($Role, $Scope, $Label, $Reason) {
@@ -363,7 +404,7 @@ Assign-AzureRole `
 
 # ── 5. GitHub Environment ─────────────────────────────────────────────────────
 
-Write-Host "-- [6/7] GitHub Environment ----------------------------------"
+Write-Host "-- [7/8] GitHub Environment ----------------------------------"
 Write-Host "   Creating environment '$GitHubEnvName' in $GitHubRepo."
 Write-Host "   The workflow file references this name -- it must exist before the first run."
 Write-Host ""
@@ -378,7 +419,7 @@ if ($LASTEXITCODE -eq 0) {
 # ── 6. GitHub Secrets ─────────────────────────────────────────────────────────
 
 Write-Host ""
-Write-Host "-- [7/7] GitHub Secrets & Variables --------------------------"
+Write-Host "-- [8/8] GitHub Secrets & Variables --------------------------"
 Write-Host "   Secrets: sensitive values, encrypted at rest, never exposed in logs."
 Write-Host "   Variables: non-sensitive config, readable in logs (used for resource name suffixes)."
 Write-Host ""
@@ -411,8 +452,8 @@ function Set-RepoVariable($Name, $Value) {
 Set-EnvSecret "AZURE_CLIENT_ID"         $AppId
 Set-EnvSecret "AZURE_TENANT_ID"         $TenantId
 Set-EnvSecret "AZURE_SUBSCRIPTION_ID"   $SubscriptionId
-Set-EnvSecret "SQL_AAD_ADMIN_LOGIN"     $CurrentAzureUser
-Set-EnvSecret "SQL_AAD_ADMIN_OBJECT_ID" $SqlObjectId
+Set-EnvSecret "SQL_AAD_ADMIN_LOGIN"     $SqlGroupName
+Set-EnvSecret "SQL_AAD_ADMIN_OBJECT_ID" $SqlGroupObjectId
 
 Write-Host ""
 Write-Host "   Environment variables (non-sensitive, used as resource name suffix):"
@@ -435,6 +476,7 @@ Write-Host "  * TF backend SA    : $TfStateSA (container: $TfContainerName)"
 Write-Host "  * App Registration : $AppName ($AppId)"
 Write-Host "  * Federated trust  : branch '$Branch' in $GitHubRepo"
 Write-Host "  * Roles            : Contributor (subscription), Blob Data Contributor ($TfStateSA)"
+Write-Host "  * SQL admin group  : $SqlGroupName (you + CI/CD SP as members)"
 Write-Host ""
 Write-Host "  Created in GitHub:"
 Write-Host "  * Environment        : $GitHubEnvName"

@@ -11,10 +11,8 @@
 //       terraform plan  -var-file=tvars/terraform-prod.tfvars
 //       terraform apply -var-file=tvars/terraform-prod.tfvars
 //
-// After first apply — connect to SQL as the AAD admin and run once per environment:
-//   CREATE USER [uami-<env>-<project>] FROM EXTERNAL PROVIDER;
-//   ALTER ROLE db_owner ADD MEMBER [uami-<env>-<project>];
-// (db_owner required — app runs EF Core migrations which need DDL permissions)
+// The UAMI SQL grant (CREATE USER FROM EXTERNAL PROVIDER + ALTER ROLE db_owner)
+// is handled automatically by the CI/CD grant-db-access job after each terraform apply.
 
 locals {
   tags            = merge({

@@ -35,6 +35,14 @@ output "identity_client_id" {
   value = module.identity_acr_pull.client_id
 }
 
+output "uami_name" {
+  value = module.identity_acr_pull.name
+}
+
+output "sql_database_name" {
+  value = module.sql.database_name
+}
+
 output "project_name" {
   value = var.project_name
 }
