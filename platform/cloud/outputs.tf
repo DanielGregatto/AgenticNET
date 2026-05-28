@@ -43,6 +43,10 @@ output "sql_database_name" {
   value = module.sql.database_name
 }
 
+output "sql_server_principal_id" {
+  value = module.sql.server_principal_id
+}
+
 output "project_name" {
   value = var.project_name
 }

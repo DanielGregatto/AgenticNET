@@ -62,6 +62,12 @@ resource "azurerm_mssql_server" "this" {
   administrator_login_password = random_password.sql_admin.result
   tags                         = var.tags
 
+  # Required for CREATE USER FROM EXTERNAL PROVIDER — the server uses this
+  # identity to call Azure AD Graph API to resolve AAD principals.
+  identity {
+    type = "SystemAssigned"
+  }
+
   azuread_administrator {
     login_username              = var.aad_admin_login
     object_id                   = var.aad_admin_object_id

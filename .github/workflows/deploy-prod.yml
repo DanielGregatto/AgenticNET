@@ -20,6 +20,7 @@ jobs:
       sql_server_fqdn: ${{ steps.tf-outputs.outputs.sql_server_fqdn }}
       sql_database_name: ${{ steps.tf-outputs.outputs.sql_database_name }}
       uami_name: ${{ steps.tf-outputs.outputs.uami_name }}
+      sql_server_principal_id: ${{ steps.tf-outputs.outputs.sql_server_principal_id }}
     env:
       ARM_USE_OIDC: "true"
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -67,9 +68,11 @@ jobs:
           echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
           echo "container_app_name=$CONTAINER_APP_NAME" >> $GITHUB_OUTPUT
           echo "resource_group_name=$RESOURCE_GROUP_NAME" >> $GITHUB_OUTPUT
+          SQL_SERVER_PRINCIPAL_ID=$(terraform -chdir=platform/cloud output -raw sql_server_principal_id)
           echo "sql_server_fqdn=$SQL_SERVER_FQDN" >> $GITHUB_OUTPUT
           echo "sql_database_name=$SQL_DATABASE_NAME" >> $GITHUB_OUTPUT
           echo "uami_name=$UAMI_NAME" >> $GITHUB_OUTPUT
+          echo "sql_server_principal_id=$SQL_SERVER_PRINCIPAL_ID" >> $GITHUB_OUTPUT
 
   grant-db-access:
     name: Grant UAMI DB Access (prod)
@@ -83,6 +86,33 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Grant SQL Server Directory Reader
+        env:
+          SQL_SERVER_PRINCIPAL_ID: ${{ needs.terraform.outputs.sql_server_principal_id }}
+        run: |
+          DIR_READERS_TEMPLATE_ID="88d8e3e3-8f55-4a1e-953a-9b9898b8876b"
+
+          DIR_READERS_ROLE_ID=$(az rest --method GET \
+            --uri "https://graph.microsoft.com/v1.0/directoryRoles?\$filter=roleTemplateId eq '$DIR_READERS_TEMPLATE_ID'" \
+            --query "value[0].id" -o tsv 2>/dev/null)
+
+          if [ -z "$DIR_READERS_ROLE_ID" ] || [ "$DIR_READERS_ROLE_ID" = "null" ]; then
+            az rest --method POST \
+              --uri "https://graph.microsoft.com/v1.0/directoryRoles" \
+              --body "{\"roleTemplateId\": \"$DIR_READERS_TEMPLATE_ID\"}" \
+              --output none
+            DIR_READERS_ROLE_ID=$(az rest --method GET \
+              --uri "https://graph.microsoft.com/v1.0/directoryRoles?\$filter=roleTemplateId eq '$DIR_READERS_TEMPLATE_ID'" \
+              --query "value[0].id" -o tsv)
+          fi
+
+          az rest --method POST \
+            --uri "https://graph.microsoft.com/v1.0/directoryRoles/$DIR_READERS_ROLE_ID/members/\$ref" \
+            --body "{\"@odata.id\": \"https://graph.microsoft.com/v1.0/directoryObjects/$SQL_SERVER_PRINCIPAL_ID\"}" \
+            2>/dev/null || true
+
+          echo "Directory Reader assigned to SQL server identity (idempotent)."
 
       - name: Install SQL ODBC Driver
         run: |

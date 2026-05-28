@@ -402,6 +402,58 @@ Assign-AzureRole `
     "Storage Blob Data Contributor on $TfStateSA" `
     "Terraform stores its state (.tfstate) in this storage account. Without this, Terraform cannot track what it has already deployed and will recreate everything on each run."
 
+# Grant the SP "Privileged Role Administrator" in Azure AD so CI/CD can assign
+# the "Directory Readers" role to the SQL server's system-assigned identity.
+# That role lets the SQL server call Azure AD to resolve AAD principals
+# when CREATE USER FROM EXTERNAL PROVIDER runs.
+Write-Host "   Assigning: Privileged Role Administrator (Azure AD built-in role)"
+Write-Host "   Why: CI/CD must grant Directory Readers to the SQL server's system identity after each terraform apply"
+
+# Template ID for Privileged Role Administrator — same in every Azure AD tenant (Microsoft-defined constant)
+$PrivRoleAdminTemplateId = "e8611ab8-c189-46e8-94e1-60213ab1f814"
+
+# Activate the role in this tenant if not yet active
+$PrivRoleId = az rest --method GET `
+    --uri "https://graph.microsoft.com/v1.0/directoryRoles?`$filter=roleTemplateId eq '$PrivRoleAdminTemplateId'" `
+    --query "value[0].id" -o tsv 2>$null
+if (-not $PrivRoleId -or $PrivRoleId -eq "None") {
+    $ActivateJson = @{ roleTemplateId = $PrivRoleAdminTemplateId } | ConvertTo-Json
+    $TempActivate = [System.IO.Path]::GetTempFileName()
+    Set-Content -Path $TempActivate -Value $ActivateJson -Encoding utf8
+    az rest --method POST `
+        --uri "https://graph.microsoft.com/v1.0/directoryRoles" `
+        --body "@$TempActivate" `
+        --headers "Content-Type=application/json" `
+        --output none
+    Remove-Item -Path $TempActivate -Force
+    $PrivRoleId = az rest --method GET `
+        --uri "https://graph.microsoft.com/v1.0/directoryRoles?`$filter=roleTemplateId eq '$PrivRoleAdminTemplateId'" `
+        --query "value[0].id" -o tsv
+}
+
+$AlreadyAssigned = az rest --method GET `
+    --uri "https://graph.microsoft.com/v1.0/directoryRoles/$PrivRoleId/members" `
+    --query "value[?id=='$SpObjectId'].id" -o tsv 2>$null
+if ($AlreadyAssigned -and $AlreadyAssigned -ne "None") {
+    Write-Host "   Already assigned (skipping)"
+} else {
+    $MemberJson = @{ "@odata.id" = "https://graph.microsoft.com/v1.0/directoryObjects/$SpObjectId" } | ConvertTo-Json
+    $TempMember = [System.IO.Path]::GetTempFileName()
+    Set-Content -Path $TempMember -Value $MemberJson -Encoding utf8
+    az rest --method POST `
+        --uri "https://graph.microsoft.com/v1.0/directoryRoles/$PrivRoleId/members/`$ref" `
+        --body "@$TempMember" `
+        --headers "Content-Type=application/json" `
+        --output none
+    Remove-Item -Path $TempMember -Force
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "   Done"
+    } else {
+        Write-Host "   FAILED -- check that you are a Global Administrator in this tenant"
+    }
+}
+Write-Host ""
+
 # ── 5. GitHub Environment ─────────────────────────────────────────────────────
 
 Write-Host "-- [7/8] GitHub Environment ----------------------------------"
@@ -476,6 +528,7 @@ Write-Host "  * TF backend SA    : $TfStateSA (container: $TfContainerName)"
 Write-Host "  * App Registration : $AppName ($AppId)"
 Write-Host "  * Federated trust  : branch '$Branch' in $GitHubRepo"
 Write-Host "  * Roles            : Contributor (subscription), Blob Data Contributor ($TfStateSA)"
+Write-Host "  * AD role          : Privileged Role Administrator (lets CI/CD assign Directory Readers to SQL server identity)"
 Write-Host "  * SQL admin group  : $SqlGroupName (you + CI/CD SP as members)"
 Write-Host ""
 Write-Host "  Created in GitHub:"
