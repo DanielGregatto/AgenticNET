@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace AgentInfrastructure.Providers
 {
-    internal static class AgentKernelFactory
+    public static class AgentKernelFactory
     {
-        internal static Task<Kernel> CreateAsync(
+        public static async Task<Kernel> CreateAsync(
             AgentOptions agent,
             AgentOrchestrationOptions options)
         {
@@ -22,7 +22,9 @@ namespace AgentInfrastructure.Providers
                     $"Agent '{agent.Name}' references provider '{providerName}' which is not configured under AgentOrchestration:Providers.");
 
             var builder = Kernel.CreateBuilder();
-            var credential = new ChainedTokenCredential(new AzureCliCredential(), new DefaultAzureCredential());
+            var credential = new ChainedTokenCredential(
+                new AzureCliCredential(),
+                new DefaultAzureCredential());
 
             switch (providerName)
             {
@@ -45,7 +47,7 @@ namespace AgentInfrastructure.Providers
                         $"Unknown provider '{providerName}'. Supported values: AzureAI, AzureAIFoundry.");
             }
 
-            return Task.FromResult(builder.Build());
+            return builder.Build();
         }
     }
 }

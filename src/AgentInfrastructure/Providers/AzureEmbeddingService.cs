@@ -28,10 +28,14 @@ namespace AgentInfrastructure.Providers
         {
             var options = embeddingOptions.Value;
 
+            var credential = new ChainedTokenCredential(
+                new AzureCliCredential(),
+                new DefaultAzureCredential());
+
             _inner = new AzureOpenAITextEmbeddingGenerationService(
                 options.Deployment,
                 options.Endpoint,
-                new DefaultAzureCredential());
+                credential);
         }
 
         /// <summary>

@@ -35,10 +35,14 @@ namespace AgentInfrastructure.Providers
             _options = options.Value;
             _embeddingService = embeddingService;
 
+            var credential = new ChainedTokenCredential(
+                new AzureCliCredential(),
+                new DefaultAzureCredential());
+
             _searchClient = new SearchClient(
                 new Uri(_options.Endpoint),
                 _options.IndexName,
-                new DefaultAzureCredential());
+                credential);
         }
 
         /// <summary>

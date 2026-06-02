@@ -216,7 +216,9 @@ namespace AgentInfrastructure.Orchestration
             var chatService = kernel.GetRequiredService<IChatCompletionService>();
             var executionSettings = new PromptExecutionSettings
             {
-                FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
+                FunctionChoiceBehavior = agentConfig.Plugins.Count > 0
+                    ? FunctionChoiceBehavior.Auto()
+                    : null
             };
 
             var maxAttempts = agentConfig.Review.Required
