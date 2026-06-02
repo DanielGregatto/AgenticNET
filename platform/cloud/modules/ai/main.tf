@@ -40,6 +40,10 @@ resource "azurerm_cognitive_account" "this" {
   public_network_access_enabled = true
   project_management_enabled    = true
   tags                          = var.tags
+
+  identity {
+    type = "SystemAssigned"
+  }
 }
 
 resource "azurerm_cognitive_deployment" "this" {
