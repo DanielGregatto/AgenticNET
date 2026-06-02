@@ -97,6 +97,7 @@ resource "azurerm_container_app" "this" {
       env {
         name  = "AgentOrchestration__Providers__AzureAI__Endpoint"
         value = var.ai_endpoint
+      }
 
       env {
         name  = "AgentOrchestration__Providers__AzureAIFoundry__Endpoint"
