@@ -9,6 +9,7 @@ variable "aspnetcore_environment"       { type = string }
 variable "sql_server_fqdn"              { type = string }
 variable "sql_database_name"            { type = string }
 variable "ai_endpoint"                  { type = string }
+variable "ai_foundry_endpoint"          { type = string }
 variable "embedding_endpoint"           { type = string }
 variable "embedding_deployment"         { type = string }
 variable "search_endpoint"              { type = string }
@@ -96,6 +97,10 @@ resource "azurerm_container_app" "this" {
       env {
         name  = "AgentOrchestration__Providers__AzureAI__Endpoint"
         value = var.ai_endpoint
+
+      env {
+        name  = "AgentOrchestration__Providers__AzureAIFoundry__Endpoint"
+        value = var.ai_foundry_endpoint
       }
 
       env {

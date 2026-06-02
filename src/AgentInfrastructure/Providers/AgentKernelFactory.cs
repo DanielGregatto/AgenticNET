@@ -1,3 +1,4 @@
+using Azure.AI.OpenAI;
 using Azure.Identity;
 using Domain.Configs;
 using Microsoft.SemanticKernel;
@@ -21,6 +22,7 @@ namespace AgentInfrastructure.Providers
                     $"Agent '{agent.Name}' references provider '{providerName}' which is not configured under AgentOrchestration:Providers.");
 
             var builder = Kernel.CreateBuilder();
+            var credential = new ChainedTokenCredential(new AzureCliCredential(), new DefaultAzureCredential());
 
             switch (providerName)
             {
@@ -28,12 +30,19 @@ namespace AgentInfrastructure.Providers
                     builder.AddAzureOpenAIChatCompletion(
                         deploymentName: agent.DeploymentOrModel,
                         endpoint: provider.Endpoint,
-                        credentials: new ChainedTokenCredential(new AzureCliCredential(), new DefaultAzureCredential()));
+                        credentials: credential);
+                    break;
+
+                case "AzureAIFoundry":
+                    var foundryClient = new AzureOpenAIClient(
+                        new Uri(provider.Endpoint),
+                        credential);
+                    builder.AddAzureOpenAIChatCompletion(agent.DeploymentOrModel, foundryClient);
                     break;
 
                 default:
                     throw new InvalidOperationException(
-                        $"Unknown provider '{providerName}'. Supported values: AzureAI.");
+                        $"Unknown provider '{providerName}'. Supported values: AzureAI, AzureAIFoundry.");
             }
 
             return Task.FromResult(builder.Build());

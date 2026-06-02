@@ -162,7 +162,8 @@ module "api" {
   sql_server_fqdn  = module.sql.server_fqdn
   sql_database_name = module.sql.database_name
 
-  ai_endpoint  = module.ai.endpoint
+  ai_endpoint         = module.ai.endpoint
+  ai_foundry_endpoint = module.ai.foundry_endpoint
 
   embedding_endpoint  = module.ai.endpoint
   embedding_deployment = module.ai.deployments["embeddings"]
