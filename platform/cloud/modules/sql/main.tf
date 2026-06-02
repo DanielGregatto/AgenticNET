@@ -9,6 +9,12 @@ variable "name_suffix" {
   type    = string
   default = ""
 }
+variable "local_dev_ip" {
+  type        = string
+  default     = ""
+  description = "Developer's public IP added to the SQL firewall so local tools can connect. Set by setup-azure.ps1."
+}
+
 variable "tags" {
   type    = map(string)
   default = {}
@@ -56,6 +62,12 @@ resource "azurerm_mssql_server" "this" {
   administrator_login_password = random_password.sql_admin.result
   tags                         = var.tags
 
+  # Required for CREATE USER FROM EXTERNAL PROVIDER — the server uses this
+  # identity to call Azure AD Graph API to resolve AAD principals.
+  identity {
+    type = "SystemAssigned"
+  }
+
   azuread_administrator {
     login_username              = var.aad_admin_login
     object_id                   = var.aad_admin_object_id
@@ -84,4 +96,12 @@ resource "azurerm_mssql_firewall_rule" "azure_services" {
   server_id        = azurerm_mssql_server.this.id
   start_ip_address = "0.0.0.0"
   end_ip_address   = "0.0.0.0"
+}
+
+resource "azurerm_mssql_firewall_rule" "local_dev" {
+  count            = var.local_dev_ip != "" ? 1 : 0
+  name             = "LocalDev"
+  server_id        = azurerm_mssql_server.this.id
+  start_ip_address = var.local_dev_ip
+  end_ip_address   = var.local_dev_ip
 }

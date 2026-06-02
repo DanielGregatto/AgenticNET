@@ -7,3 +7,7 @@ output "sql_admin_password" {
   value     = random_password.sql_admin.result
   sensitive = true
 }
+
+output "server_principal_id" {
+  value = azurerm_mssql_server.this.identity[0].principal_id
+}

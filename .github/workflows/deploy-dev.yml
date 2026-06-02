@@ -1,0 +1,287 @@
+name: Deploy Dev
+
+on:
+  push:
+    branches: [development]
+
+permissions:
+  id-token: write
+  contents: read
+  checks: write
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Test
+        run: |
+          dotnet test src/Tests/Unitary/Domain.Unit.Tests/Unit.Tests.csproj \
+            --logger "trx;LogFileName=results.trx"
+
+      - name: Publish Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Unit Tests
+          path: '**/*.trx'
+          reporter: dotnet-trx
+
+  terraform:
+    name: Terraform Apply (dev)
+    runs-on: ubuntu-latest
+    environment: development
+    outputs:
+      acr_login_server: ${{ steps.tf-outputs.outputs.acr_login_server }}
+      container_app_name: ${{ steps.tf-outputs.outputs.container_app_name }}
+      resource_group_name: ${{ steps.tf-outputs.outputs.resource_group_name }}
+      sql_server_fqdn: ${{ steps.tf-outputs.outputs.sql_server_fqdn }}
+      sql_database_name: ${{ steps.tf-outputs.outputs.sql_database_name }}
+      uami_name: ${{ steps.tf-outputs.outputs.uami_name }}
+      sql_server_principal_id: ${{ steps.tf-outputs.outputs.sql_server_principal_id }}
+    env:
+      ARM_USE_OIDC: "true"
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Terraform Init
+        run: |
+          terraform -chdir=platform/cloud init \
+            -backend-config="resource_group_name=rg-terraform-agenticnet-core" \
+            -backend-config="storage_account_name=stterraformagnet${{ vars.TF_BACKEND_SUFFIX }}" \
+            -backend-config="container_name=tfstate-dev" \
+            -backend-config="key=agenticnet-dev.tfstate"
+
+      - name: Terraform Apply
+        run: |
+          terraform -chdir=platform/cloud apply -auto-approve \
+            -var-file=tvars/terraform-dev.tfvars \
+            -var="name_suffix=${{ vars.TF_NAME_SUFFIX }}" \
+            -var="sql_aad_admin_login=${{ secrets.SQL_AAD_ADMIN_LOGIN }}" \
+            -var="sql_aad_admin_object_id=${{ secrets.SQL_AAD_ADMIN_OBJECT_ID }}"
+
+      - name: Capture Terraform Outputs
+        id: tf-outputs
+        run: |
+          ACR_LOGIN_SERVER=$(terraform -chdir=platform/cloud output -raw acr_login_server)
+          CONTAINER_APP_NAME=$(terraform -chdir=platform/cloud output -raw container_app_name)
+          RESOURCE_GROUP_NAME=$(terraform -chdir=platform/cloud output -raw resource_group_name)
+          SQL_SERVER_FQDN=$(terraform -chdir=platform/cloud output -raw sql_server_fqdn)
+          SQL_DATABASE_NAME=$(terraform -chdir=platform/cloud output -raw sql_database_name)
+          UAMI_NAME=$(terraform -chdir=platform/cloud output -raw uami_name)
+          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "container_app_name=$CONTAINER_APP_NAME" >> $GITHUB_OUTPUT
+          echo "resource_group_name=$RESOURCE_GROUP_NAME" >> $GITHUB_OUTPUT
+          SQL_SERVER_PRINCIPAL_ID=$(terraform -chdir=platform/cloud output -raw sql_server_principal_id)
+          echo "sql_server_fqdn=$SQL_SERVER_FQDN" >> $GITHUB_OUTPUT
+          echo "sql_database_name=$SQL_DATABASE_NAME" >> $GITHUB_OUTPUT
+          echo "uami_name=$UAMI_NAME" >> $GITHUB_OUTPUT
+          echo "sql_server_principal_id=$SQL_SERVER_PRINCIPAL_ID" >> $GITHUB_OUTPUT
+
+  grant-db-access:
+    name: Grant UAMI DB Access (dev)
+    runs-on: ubuntu-latest
+    needs: terraform
+    environment: development
+
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Grant SQL Server Directory Reader
+        env:
+          SQL_SERVER_PRINCIPAL_ID: ${{ needs.terraform.outputs.sql_server_principal_id }}
+        run: |
+          # Template ID for Directory Readers — fixed constant across all Azure AD tenants
+          DIR_READERS_TEMPLATE_ID="88d8e3e3-8f55-4a1e-953a-9b9898b8876b"
+
+          DIR_READERS_ROLE_ID=$(az rest --method GET \
+            --uri "https://graph.microsoft.com/v1.0/directoryRoles?\$filter=roleTemplateId eq '$DIR_READERS_TEMPLATE_ID'" \
+            --query "value[0].id" -o tsv 2>/dev/null)
+
+          if [ -z "$DIR_READERS_ROLE_ID" ] || [ "$DIR_READERS_ROLE_ID" = "null" ]; then
+            az rest --method POST \
+              --uri "https://graph.microsoft.com/v1.0/directoryRoles" \
+              --body "{\"roleTemplateId\": \"$DIR_READERS_TEMPLATE_ID\"}" \
+              --output none
+            DIR_READERS_ROLE_ID=$(az rest --method GET \
+              --uri "https://graph.microsoft.com/v1.0/directoryRoles?\$filter=roleTemplateId eq '$DIR_READERS_TEMPLATE_ID'" \
+              --query "value[0].id" -o tsv)
+          fi
+
+          az rest --method POST \
+            --uri "https://graph.microsoft.com/v1.0/directoryRoles/$DIR_READERS_ROLE_ID/members/\$ref" \
+            --body "{\"@odata.id\": \"https://graph.microsoft.com/v1.0/directoryObjects/$SQL_SERVER_PRINCIPAL_ID\"}" \
+            2>/dev/null || true
+
+          echo "Directory Reader assigned to SQL server identity (idempotent)."
+
+      - name: Install SQL ODBC Driver
+        run: |
+          curl -sSL https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
+          curl -sSL "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list" | \
+            sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update -q
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
+          pip install pyodbc -q
+
+      - name: Grant UAMI DB Access
+        env:
+          SQL_FQDN: ${{ needs.terraform.outputs.sql_server_fqdn }}
+          DB_NAME: ${{ needs.terraform.outputs.sql_database_name }}
+          UAMI_NAME: ${{ needs.terraform.outputs.uami_name }}
+        run: |
+          cat > /tmp/grant_uami.py << 'PYEOF'
+          import pyodbc, struct, os, sys
+
+          server   = os.environ['SQL_FQDN']
+          database = os.environ['DB_NAME']
+          uami     = os.environ['UAMI_NAME']
+          token    = os.environ['SQL_TOKEN']
+
+          # Encode token as UTF-16LE (required by ODBC SQL_COPT_SS_ACCESS_TOKEN)
+          token_bytes = bytes(token, 'UTF-8')
+          expanded = b''
+          for b in token_bytes:
+              expanded += bytes({b}) + bytes(1)
+          token_struct = struct.pack('=i', len(expanded)) + expanded
+
+          conn_str = (
+              "Driver={ODBC Driver 18 for SQL Server};"
+              f"Server=tcp:{server},1433;"
+              f"Database={database};"
+              "Encrypt=yes;TrustServerCertificate=yes;"
+          )
+          conn = pyodbc.connect(conn_str, attrs_before={1256: token_struct})
+          conn.autocommit = True
+          cur = conn.cursor()
+          cur.execute(
+              f"IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '{uami}') "
+              f"    CREATE USER [{uami}] FROM EXTERNAL PROVIDER"
+          )
+          cur.execute(
+              f"IF IS_ROLEMEMBER('db_owner', '{uami}') = 0 "
+              f"    ALTER ROLE [db_owner] ADD MEMBER [{uami}]"
+          )
+          conn.close()
+          print('Grant succeeded.')
+          PYEOF
+
+          for attempt in $(seq 1 5); do
+            SQL_TOKEN=$(az account get-access-token --resource "https://database.windows.net/" --query accessToken -o tsv)
+            echo "::add-mask::$SQL_TOKEN"
+            export SQL_TOKEN
+            if python3 /tmp/grant_uami.py; then
+              echo "Grant confirmed on attempt $attempt."
+              break
+            fi
+            if [ "$attempt" -eq 5 ]; then
+              echo "Grant failed after 5 attempts."
+              exit 1
+            fi
+            echo "Attempt $attempt failed — waiting 30s for AAD propagation..."
+            sleep 30
+          done
+
+  build-and-deploy:
+    name: Build & Deploy (dev)
+    runs-on: ubuntu-latest
+    needs: [test, terraform, grant-db-access]
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to ACR
+        run: az acr login --name ${{ needs.terraform.outputs.acr_login_server }}
+
+      - name: Build & Push Docker Image
+        env:
+          IMAGE: ${{ needs.terraform.outputs.acr_login_server }}/agenticnet:${{ github.sha }}
+        run: |
+          docker build -t "$IMAGE" -f src/UI.API/Dockerfile .
+          docker push "$IMAGE"
+
+      - name: Deploy to Container App
+        run: |
+          az containerapp update \
+            --name "${{ needs.terraform.outputs.container_app_name }}" \
+            --resource-group "${{ needs.terraform.outputs.resource_group_name }}" \
+            --image "${{ needs.terraform.outputs.acr_login_server }}/agenticnet:${{ github.sha }}"
+
+  summarize:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [terraform, build-and-deploy]
+    environment: development
+    if: always()
+
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Write Summary
+        env:
+          CONTAINER_APP_NAME: ${{ needs.terraform.outputs.container_app_name }}
+          RESOURCE_GROUP: ${{ needs.terraform.outputs.resource_group_name }}
+          ACR_LOGIN_SERVER: ${{ needs.terraform.outputs.acr_login_server }}
+          SQL_FQDN: ${{ needs.terraform.outputs.sql_server_fqdn }}
+          DB_NAME: ${{ needs.terraform.outputs.sql_database_name }}
+          GIT_SHA: ${{ github.sha }}
+        run: |
+          SUBSCRIPTION=$(az account show --query id -o tsv)
+          APP_FQDN=$(az containerapp show \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || echo "unavailable")
+          SQL_SERVER="${SQL_FQDN%%.database.windows.net}"
+          ACR_NAME="${ACR_LOGIN_SERVER%%.*}"
+          PORTAL="https://portal.azure.com/#resource/subscriptions/$SUBSCRIPTION/resourceGroups/$RESOURCE_GROUP/providers"
+
+          {
+            echo "## Deployment Summary"
+            echo ""
+            echo "| Resource | Link |"
+            echo "|----------|------|"
+            echo "| Application | [https://$APP_FQDN/swagger](https://$APP_FQDN/swagger) |"
+            echo "| Resource Group | [Azure Portal](https://portal.azure.com/#resource/subscriptions/$SUBSCRIPTION/resourceGroups/$RESOURCE_GROUP/overview) |"
+            echo "| Container App | [Azure Portal]($PORTAL/Microsoft.App/containerApps/$CONTAINER_APP_NAME/overview) |"
+            echo "| Container Registry | [Azure Portal]($PORTAL/Microsoft.ContainerRegistry/registries/$ACR_NAME/overview) |"
+            echo "| SQL Database | [Azure Portal]($PORTAL/Microsoft.Sql/servers/$SQL_SERVER/databases/$DB_NAME/overview) |"
+            echo ""
+            echo "**Image:** \`$ACR_LOGIN_SERVER/agenticnet:$GIT_SHA\`"
+            echo "**Commit:** \`$GIT_SHA\`"
+          } >> "$GITHUB_STEP_SUMMARY"

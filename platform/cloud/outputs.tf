@@ -23,8 +23,8 @@ output "sql_admin_password" {
   sensitive = true
 }
 
-output "openai_endpoint" {
-  value = module.openai.endpoint
+output "ai_endpoint" {
+  value = module.ai.endpoint
 }
 
 output "search_endpoint" {
@@ -33,6 +33,18 @@ output "search_endpoint" {
 
 output "identity_client_id" {
   value = module.identity_acr_pull.client_id
+}
+
+output "uami_name" {
+  value = module.identity_acr_pull.name
+}
+
+output "sql_database_name" {
+  value = module.sql.database_name
+}
+
+output "sql_server_principal_id" {
+  value = module.sql.server_principal_id
 }
 
 output "project_name" {

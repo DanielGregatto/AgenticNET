@@ -19,14 +19,20 @@ variable "location" {
   default = "brazilsouth"
 }
 
-# Use a different location for OpenAI if your target models are only available in specific regions
-variable "openai_location" {
+# Use a different location for AI Services if your target models are only available in specific regions
+variable "ai_location" {
   type    = string
   default = "eastus2"
 }
 
 # SQL Server provisioning is restricted in some regions — override if needed
 variable "sql_location" {
+  type    = string
+  default = ""
+}
+
+# AI Search availability varies by region — override if needed
+variable "search_location" {
   type    = string
   default = ""
 }
@@ -40,6 +46,12 @@ variable "aspnetcore_environment" {
 variable "sql_database_name" {
   type    = string
   default = ""
+}
+
+variable "sql_local_dev_ip" {
+  type        = string
+  default     = ""
+  description = "Developer's public IP to whitelist in the SQL firewall. Written by setup-azure.ps1."
 }
 
 variable "sql_aad_admin_login" {
@@ -67,35 +79,19 @@ variable "sql_auto_pause_delay_in_minutes" {
   default = 60
 }
 
-# Azure OpenAI model deployments
-variable "chat_deployment_name" {
-  type    = string
-  default = "gpt-4o"
-}
-
-variable "chat_model_name" {
-  type    = string
-  default = "gpt-4o"
-}
-
-variable "chat_model_version" {
-  type    = string
-  default = "2024-11-20"
-}
-
-variable "embedding_deployment_name" {
-  type    = string
-  default = "text-embedding-ada-002"
-}
-
-variable "embedding_model_name" {
-  type    = string
-  default = "text-embedding-ada-002"
-}
-
-variable "embedding_model_version" {
-  type    = string
-  default = "2"
+# Azure AI Services model deployments
+variable "ai_deployments" {
+  type = list(object({
+    name                   = string
+    format                 = optional(string, "OpenAI")
+    model_name             = string
+    model_version          = string
+    capacity               = number
+    sku_name               = optional(string, "GlobalStandard")
+    version_upgrade_option = optional(string, "OnceNewDefaultVersionAvailable")
+  }))
+  default     = []
+  description = "List of model deployments to provision inside the Azure AI Services resource. Each entry creates one deployment. Use 'format' to specify the model provider (e.g. OpenAI, DeepSeek, Anthropic)."
 }
 
 # AI Search

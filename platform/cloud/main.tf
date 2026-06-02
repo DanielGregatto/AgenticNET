@@ -11,18 +11,17 @@
 //       terraform plan  -var-file=tvars/terraform-prod.tfvars
 //       terraform apply -var-file=tvars/terraform-prod.tfvars
 //
-// After first apply — connect to SQL as the AAD admin and run once per environment:
-//   CREATE USER [uami-<env>-<project>] FROM EXTERNAL PROVIDER;
-//   ALTER ROLE db_owner ADD MEMBER [uami-<env>-<project>];
-// (db_owner required — app runs EF Core migrations which need DDL permissions)
+// The UAMI SQL grant (CREATE USER FROM EXTERNAL PROVIDER + ALTER ROLE db_owner)
+// is handled automatically by the CI/CD grant-db-access job after each terraform apply.
 
 locals {
-  tags         = merge({
+  tags            = merge({
     environment = var.environment
     project     = var.project_name
     managed_by  = "terraform"
   }, var.tags)
-  sql_location = var.sql_location != "" ? var.sql_location : var.location
+  sql_location    = var.sql_location    != "" ? var.sql_location    : var.location
+  search_location = var.search_location != "" ? var.search_location : var.location
 }
 
 module "rg" {
@@ -83,29 +82,28 @@ module "cae" {
   tags                       = local.tags
 }
 
-module "openai" {
-  source              = "./modules/openai"
-  environment         = var.environment
-  project_name        = var.project_name
-  location            = var.openai_location
-  resource_group_name = module.rg.name
-  name_suffix         = var.name_suffix
+moved {
+  from = module.openai
+  to   = module.ai
+}
 
-  chat_deployment_name      = var.chat_deployment_name
-  chat_model_name           = var.chat_model_name
-  chat_model_version        = var.chat_model_version
-
-  embedding_deployment_name = var.embedding_deployment_name
-  embedding_model_name      = var.embedding_model_name
-  embedding_model_version   = var.embedding_model_version
-  tags                      = local.tags
+module "ai" {
+  source                = "./modules/ai"
+  environment           = var.environment
+  project_name          = var.project_name
+  location              = var.ai_location
+  resource_group_name   = module.rg.name
+  name_suffix           = var.name_suffix
+  deployments           = var.ai_deployments
+  admin_group_object_id = var.sql_aad_admin_object_id
+  tags                  = local.tags
 }
 
 module "search" {
   source              = "./modules/search"
   environment         = var.environment
   project_name        = var.project_name
-  location            = module.rg.location
+  location            = local.search_location
   resource_group_name = module.rg.name
   name_suffix         = var.name_suffix
   sku                 = var.search_sku
@@ -120,7 +118,7 @@ module "identity_acr_pull" {
   resource_group_name = module.rg.name
   acr_id              = module.acr.id
   storage_account_id  = module.storage.id
-  openai_resource_id  = module.openai.id
+  ai_resource_id      = module.ai.id
   search_resource_id  = module.search.id
   tags                = local.tags
 }
@@ -145,6 +143,7 @@ module "sql" {
   aad_admin_login     = var.sql_aad_admin_login
   aad_admin_object_id = var.sql_aad_admin_object_id
   uami_principal_id   = module.identity_acr_pull.principal_id
+  local_dev_ip        = var.sql_local_dev_ip
 
   depends_on = [module.identity_acr_pull]
 }
@@ -163,10 +162,11 @@ module "api" {
   sql_server_fqdn  = module.sql.server_fqdn
   sql_database_name = module.sql.database_name
 
-  openai_endpoint  = module.openai.endpoint
+  ai_endpoint         = module.ai.endpoint
+  ai_foundry_endpoint = module.ai.foundry_endpoint
 
-  embedding_endpoint  = module.openai.endpoint
-  embedding_deployment = module.openai.embedding_deployment
+  embedding_endpoint  = module.ai.endpoint
+  embedding_deployment = module.ai.deployments["embeddings"]
 
   search_endpoint     = module.search.endpoint
   search_index_name   = var.search_index_name

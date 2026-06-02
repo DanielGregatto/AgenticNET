@@ -131,6 +131,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sql", "sql", "{EF024AB2-6D7
 		platform\cloud\modules\sql\outputs.tf = platform\cloud\modules\sql\outputs.tf
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{1B5955DE-6A62-41C8-8633-88A5C72CAC38}"
+	ProjectSection(SolutionItems) = preProject
+		platform\scripts\setup-azure.ps1 = platform\scripts\setup-azure.ps1
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -306,6 +311,7 @@ Global
 		{9247905D-B726-44F0-AE79-4CAC7DF67C66} = {B4453566-F7A3-47E2-A414-0914A303D533}
 		{9234BE0E-DFE4-4622-8948-B8462579869F} = {B4453566-F7A3-47E2-A414-0914A303D533}
 		{EF024AB2-6D72-494F-89E3-F420675D8102} = {B4453566-F7A3-47E2-A414-0914A303D533}
+		{1B5955DE-6A62-41C8-8633-88A5C72CAC38} = {CE7F0FBA-5413-4C47-AC68-2FBEE2444F1B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7028607C-5504-4BEF-B18F-0C324D8E0F3F}

@@ -85,8 +85,7 @@ namespace AgentInfrastructure.Orchestration
                     $"Router agent '{_options.RouterAgentName}' is not registered in AgentOrchestration:Agents.");
 
             var candidates = GetRegisteredAgents()
-                .Where(a => !string.Equals(a.Name, _options.RouterAgentName, StringComparison.OrdinalIgnoreCase)
-                         && !string.Equals(a.Name, _options.DefaultAgentName, StringComparison.OrdinalIgnoreCase))
+                .Where(a => !string.Equals(a.Name, _options.RouterAgentName, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             if (!candidates.Any())
@@ -217,7 +216,9 @@ namespace AgentInfrastructure.Orchestration
             var chatService = kernel.GetRequiredService<IChatCompletionService>();
             var executionSettings = new PromptExecutionSettings
             {
-                FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
+                FunctionChoiceBehavior = agentConfig.Plugins.Count > 0
+                    ? FunctionChoiceBehavior.Auto()
+                    : null
             };
 
             var maxAttempts = agentConfig.Review.Required

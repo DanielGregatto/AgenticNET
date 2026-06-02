@@ -16,6 +16,7 @@
 # IA
 *.claude
 *.claude/
+.specify/
 
 # Mono auto generated files
 mono_crash.*
