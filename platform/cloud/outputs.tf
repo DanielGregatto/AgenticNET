@@ -23,8 +23,8 @@ output "sql_admin_password" {
   sensitive = true
 }
 
-output "openai_endpoint" {
-  value = module.openai.endpoint
+output "ai_endpoint" {
+  value = module.ai.endpoint
 }
 
 output "search_endpoint" {

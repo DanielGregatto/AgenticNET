@@ -19,8 +19,8 @@ variable "location" {
   default = "brazilsouth"
 }
 
-# Use a different location for OpenAI if your target models are only available in specific regions
-variable "openai_location" {
+# Use a different location for AI Services if your target models are only available in specific regions
+variable "ai_location" {
   type    = string
   default = "eastus2"
 }
@@ -79,10 +79,11 @@ variable "sql_auto_pause_delay_in_minutes" {
   default = 60
 }
 
-# Azure OpenAI model deployments
-variable "openai_deployments" {
+# Azure AI Services model deployments
+variable "ai_deployments" {
   type = list(object({
     name                   = string
+    format                 = optional(string, "OpenAI")
     model_name             = string
     model_version          = string
     capacity               = number
@@ -90,7 +91,7 @@ variable "openai_deployments" {
     version_upgrade_option = optional(string, "OnceNewDefaultVersionAvailable")
   }))
   default     = []
-  description = "List of Azure OpenAI model deployments to provision. Each entry creates one deployment inside the OpenAI resource."
+  description = "List of model deployments to provision inside the Azure AI Services resource. Each entry creates one deployment. Use 'format' to specify the model provider (e.g. OpenAI, DeepSeek, Anthropic)."
 }
 
 # AI Search

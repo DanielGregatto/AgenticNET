@@ -5,7 +5,7 @@ variable "resource_group_name" { type = string }
 variable "acr_id"              { type = string }
 variable "storage_account_id"  { type = string }
 
-variable "openai_resource_id" { type = string }
+variable "ai_resource_id" { type = string }
 variable "search_resource_id" { type = string }
 variable "tags" {
   type    = map(string)
@@ -31,9 +31,9 @@ resource "azurerm_role_assignment" "storage_blob_contributor" {
   principal_id         = azurerm_user_assigned_identity.this.principal_id
 }
 
-resource "azurerm_role_assignment" "openai_user" {
-  scope                = var.openai_resource_id
-  role_definition_name = "Cognitive Services OpenAI User"
+resource "azurerm_role_assignment" "ai_user" {
+  scope                = var.ai_resource_id
+  role_definition_name = "Cognitive Services User"
   principal_id         = azurerm_user_assigned_identity.this.principal_id
 }
 

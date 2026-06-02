@@ -23,28 +23,23 @@ namespace AgentInfrastructure.Providers
                 throw new InvalidOperationException(
                     $"Agent '{agent.Name}' references provider '{providerName}' which is not configured under AgentOrchestration:Providers.");
 
-            if (providerName.StartsWith("AzureOpenAI", StringComparison.OrdinalIgnoreCase))
+            if (providerName.StartsWith("AzureAI", StringComparison.OrdinalIgnoreCase))
                 await VerifyAzureAccessAsync(providerName, provider, agent.DeploymentOrModel);
 
             var builder = Kernel.CreateBuilder();
 
             switch (providerName)
             {
-                case "AzureOpenAI":
-                case "AzureOpenAI-EastUS2":
+                case "AzureAI":
                     builder.AddAzureOpenAIChatCompletion(
                         deploymentName: agent.DeploymentOrModel,
                         endpoint: provider.Endpoint,
                         credentials: new ChainedTokenCredential(new AzureCliCredential(), new DefaultAzureCredential()));
                     break;
 
-                case "OpenAI":
-                    throw new InvalidOperationException(
-                        "OpenAI provider requires an API key and is not supported in Entra ID mode. Use an AzureOpenAI provider instead.");
-
                 default:
                     throw new InvalidOperationException(
-                        $"Unknown provider '{providerName}'. Supported values: AzureOpenAI, AzureOpenAI-EastUS2.");
+                        $"Unknown provider '{providerName}'. Supported values: AzureAI.");
             }
 
             return builder.Build();
@@ -70,9 +65,9 @@ namespace AgentInfrastructure.Providers
 
                 if (!response.IsSuccessStatusCode)
                     throw new InvalidOperationException(
-                        $"Azure OpenAI endpoint for provider '{providerName}' " +
+                        $"Azure AI Services endpoint for provider '{providerName}' " +
                         $"is not accessible: {(int)response.StatusCode} {response.StatusCode}. " +
-                        $"Ensure 'az login' is done and the account has the Cognitive Services OpenAI User role.");
+                        $"Ensure 'az login' is done and the account has the Cognitive Services User role.");
             }
             catch (InvalidOperationException)
             {

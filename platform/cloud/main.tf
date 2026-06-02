@@ -82,14 +82,19 @@ module "cae" {
   tags                       = local.tags
 }
 
-module "openai" {
-  source              = "./modules/openai"
+moved {
+  from = module.openai
+  to   = module.ai
+}
+
+module "ai" {
+  source              = "./modules/ai"
   environment         = var.environment
   project_name        = var.project_name
-  location            = var.openai_location
+  location            = var.ai_location
   resource_group_name = module.rg.name
   name_suffix         = var.name_suffix
-  deployments         = var.openai_deployments
+  deployments         = var.ai_deployments
   tags                = local.tags
 }
 
@@ -112,7 +117,7 @@ module "identity_acr_pull" {
   resource_group_name = module.rg.name
   acr_id              = module.acr.id
   storage_account_id  = module.storage.id
-  openai_resource_id  = module.openai.id
+  ai_resource_id      = module.ai.id
   search_resource_id  = module.search.id
   tags                = local.tags
 }
@@ -156,10 +161,10 @@ module "api" {
   sql_server_fqdn  = module.sql.server_fqdn
   sql_database_name = module.sql.database_name
 
-  openai_endpoint  = module.openai.endpoint
+  ai_endpoint  = module.ai.endpoint
 
-  embedding_endpoint  = module.openai.endpoint
-  embedding_deployment = module.openai.deployments["embeddings"]
+  embedding_endpoint  = module.ai.endpoint
+  embedding_deployment = module.ai.deployments["embeddings"]
 
   search_endpoint     = module.search.endpoint
   search_index_name   = var.search_index_name

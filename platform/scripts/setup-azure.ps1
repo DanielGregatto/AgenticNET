@@ -394,7 +394,7 @@ Assign-AzureRole `
     "User Access Administrator" `
     $SubScope `
     "User Access Administrator on subscription" `
-    "Terraform's identity module assigns RBAC roles to the managed identity (AcrPull, OpenAI User, Search Reader, etc.). Contributor alone cannot perform Microsoft.Authorization/roleAssignments/write."
+    "Terraform's identity module assigns RBAC roles to the managed identity (AcrPull, Cognitive Services User, Search Reader, etc.). Contributor alone cannot perform Microsoft.Authorization/roleAssignments/write."
 
 Assign-AzureRole `
     "Storage Blob Data Contributor" `
