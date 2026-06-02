@@ -43,36 +43,43 @@ namespace Services.Features.Auth.Commands.Login
 
         public async Task<Result<LoginDto>> Handle(LoginCommand request, CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Executing LoginCommand for email: {Email}", request.Email);
-
-            var validationError = await ValidateAsync<LoginCommand, LoginDto>(_validator, request, cancellationToken);
-            if (validationError != null)
+            try
             {
-                _logger.LogWarning("Login validation failed for email: {Email}", request.Email);
-                return validationError;
-            }
+                _logger.LogInformation("Executing LoginCommand for email: {Email}", request.Email);
 
-            var user = await _userManager.FindByEmailAsync(request.Email);
-            if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
+                var validationError = await ValidateAsync<LoginCommand, LoginDto>(_validator, request, cancellationToken);
+                if (validationError != null)
+                {
+                    _logger.LogWarning("Login validation failed for email: {Email}", request.Email);
+                    return validationError;
+                }
+
+                var user = await _userManager.FindByEmailAsync(request.Email);
+                if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
+                {
+                    _logger.LogWarning("Login failed - invalid credentials for email: {Email}", request.Email);
+                    return Result<LoginDto>.Unauthorized(_localizer["Auth_InvalidCredentials"]);
+                }
+
+                if (!user.EmailConfirmed)
+                {
+                    _logger.LogWarning("Login failed - email not confirmed for user: {Email}", request.Email);
+                    return Result<LoginDto>.ValidationFailure(
+                        new Error(_localizer["Auth_EmailNotConfirmedBeforeLogin"], ErrorTypes.Validation));
+                }
+
+                var accessToken = await _jwtTokenGenerator.GenerateAccessTokenAsync(user);
+                var refreshToken = await _jwtTokenGenerator.GenerateRefreshTokenAsync(user);
+
+                _logger.LogInformation("Login successful for user: {Email}, UserId: {UserId}", request.Email, user.Id);
+
+                var response = new LoginDto(accessToken, refreshToken);
+                return Result<LoginDto>.Success(response);
+            }
+            catch (System.Exception ex)
             {
-                _logger.LogWarning("Login failed - invalid credentials for email: {Email}", request.Email);
-                return Result<LoginDto>.Unauthorized(_localizer["Auth_InvalidCredentials"]);
+                throw;
             }
-
-            if (!user.EmailConfirmed)
-            {
-                _logger.LogWarning("Login failed - email not confirmed for user: {Email}", request.Email);
-                return Result<LoginDto>.ValidationFailure(
-                    new Error(_localizer["Auth_EmailNotConfirmedBeforeLogin"], ErrorTypes.Validation));
-            }
-
-            var accessToken = await _jwtTokenGenerator.GenerateAccessTokenAsync(user);
-            var refreshToken = await _jwtTokenGenerator.GenerateRefreshTokenAsync(user);
-
-            _logger.LogInformation("Login successful for user: {Email}, UserId: {UserId}", request.Email, user.Id);
-
-            var response = new LoginDto(accessToken, refreshToken);
-            return Result<LoginDto>.Success(response);
         }
     }
 }
