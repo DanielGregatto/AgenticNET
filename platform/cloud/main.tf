@@ -89,15 +89,8 @@ module "openai" {
   location            = var.openai_location
   resource_group_name = module.rg.name
   name_suffix         = var.name_suffix
-
-  chat_deployment_name      = var.chat_deployment_name
-  chat_model_name           = var.chat_model_name
-  chat_model_version        = var.chat_model_version
-
-  embedding_deployment_name = var.embedding_deployment_name
-  embedding_model_name      = var.embedding_model_name
-  embedding_model_version   = var.embedding_model_version
-  tags                      = local.tags
+  deployments         = var.openai_deployments
+  tags                = local.tags
 }
 
 module "search" {
@@ -166,7 +159,7 @@ module "api" {
   openai_endpoint  = module.openai.endpoint
 
   embedding_endpoint  = module.openai.endpoint
-  embedding_deployment = module.openai.embedding_deployment
+  embedding_deployment = module.openai.deployments["embeddings"]
 
   search_endpoint     = module.search.endpoint
   search_index_name   = var.search_index_name

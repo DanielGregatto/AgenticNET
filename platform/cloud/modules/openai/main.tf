@@ -11,48 +11,20 @@ variable "tags" {
   default = {}
 }
 
+variable "deployments" {
+  type = list(object({
+    name                   = string
+    model_name             = string
+    model_version          = string
+    capacity               = number
+    sku_name               = optional(string, "GlobalStandard")
+    version_upgrade_option = optional(string, "OnceNewDefaultVersionAvailable")
+  }))
+}
+
 locals {
-  suffix = var.name_suffix != "" ? "-${var.name_suffix}" : ""
-}
-
-variable "chat_deployment_name" {
-  type    = string
-  default = "chat"
-}
-
-variable "chat_model_name" {
-  type    = string
-  default = "gpt-4o"
-}
-
-variable "chat_model_version" {
-  type    = string
-  default = "2024-11-20"
-}
-
-variable "chat_capacity" {
-  type    = number
-  default = 10
-}
-
-variable "embedding_deployment_name" {
-  type    = string
-  default = "embeddings"
-}
-
-variable "embedding_model_name" {
-  type    = string
-  default = "text-embedding-ada-002"
-}
-
-variable "embedding_model_version" {
-  type    = string
-  default = "2"
-}
-
-variable "embedding_capacity" {
-  type    = number
-  default = 10
+  suffix          = var.name_suffix != "" ? "-${var.name_suffix}" : ""
+  deployments_map = { for d in var.deployments : d.name => d }
 }
 
 resource "azurerm_cognitive_account" "this" {
@@ -68,36 +40,32 @@ resource "azurerm_cognitive_account" "this" {
   tags                          = var.tags
 }
 
-resource "azurerm_cognitive_deployment" "chat" {
-  name                   = var.chat_deployment_name
+resource "azurerm_cognitive_deployment" "this" {
+  for_each               = local.deployments_map
+  name                   = each.key
   cognitive_account_id   = azurerm_cognitive_account.this.id
-  version_upgrade_option = "OnceNewDefaultVersionAvailable"
+  version_upgrade_option = each.value.version_upgrade_option
 
   model {
     format  = "OpenAI"
-    name    = var.chat_model_name
-    version = var.chat_model_version
+    name    = each.value.model_name
+    version = each.value.model_version
   }
 
   sku {
-    name     = "GlobalStandard"
-    capacity = var.chat_capacity
+    name     = each.value.sku_name
+    capacity = each.value.capacity
   }
 }
 
-resource "azurerm_cognitive_deployment" "embedding" {
-  name                   = var.embedding_deployment_name
-  cognitive_account_id   = azurerm_cognitive_account.this.id
-  version_upgrade_option = "OnceNewDefaultVersionAvailable"
+# State migration: map old named resources to the new for_each addresses.
+# These can be removed once all environments have been applied with the new config.
+moved {
+  from = azurerm_cognitive_deployment.chat
+  to   = azurerm_cognitive_deployment.this["chat"]
+}
 
-  model {
-    format  = "OpenAI"
-    name    = var.embedding_model_name
-    version = var.embedding_model_version
-  }
-
-  sku {
-    name     = "Standard"
-    capacity = var.embedding_capacity
-  }
+moved {
+  from = azurerm_cognitive_deployment.embedding
+  to   = azurerm_cognitive_deployment.this["embeddings"]
 }

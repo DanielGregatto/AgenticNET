@@ -1,4 +1,7 @@
-output "id"                   { value = azurerm_cognitive_account.this.id }
-output "endpoint"             { value = azurerm_cognitive_account.this.endpoint }
-output "chat_deployment"      { value = azurerm_cognitive_deployment.chat.name }
-output "embedding_deployment" { value = azurerm_cognitive_deployment.embedding.name }
+output "id"       { value = azurerm_cognitive_account.this.id }
+output "endpoint" { value = azurerm_cognitive_account.this.endpoint }
+
+output "deployments" {
+  description = "Map of deployment name to deployment name, for referencing in app config."
+  value       = { for k, v in azurerm_cognitive_deployment.this : k => v.name }
+}

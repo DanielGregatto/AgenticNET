@@ -80,34 +80,17 @@ variable "sql_auto_pause_delay_in_minutes" {
 }
 
 # Azure OpenAI model deployments
-variable "chat_deployment_name" {
-  type    = string
-  default = "gpt-4o"
-}
-
-variable "chat_model_name" {
-  type    = string
-  default = "gpt-4o"
-}
-
-variable "chat_model_version" {
-  type    = string
-  default = "2024-11-20"
-}
-
-variable "embedding_deployment_name" {
-  type    = string
-  default = "text-embedding-ada-002"
-}
-
-variable "embedding_model_name" {
-  type    = string
-  default = "text-embedding-ada-002"
-}
-
-variable "embedding_model_version" {
-  type    = string
-  default = "2"
+variable "openai_deployments" {
+  type = list(object({
+    name                   = string
+    model_name             = string
+    model_version          = string
+    capacity               = number
+    sku_name               = optional(string, "GlobalStandard")
+    version_upgrade_option = optional(string, "OnceNewDefaultVersionAvailable")
+  }))
+  default     = []
+  description = "List of Azure OpenAI model deployments to provision. Each entry creates one deployment inside the OpenAI resource."
 }
 
 # AI Search

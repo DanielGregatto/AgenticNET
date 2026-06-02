@@ -11,14 +11,22 @@ sql_sku                         = "GP_S_Gen5_1"
 sql_min_capacity                = 0.5
 sql_auto_pause_delay_in_minutes = 15
 
-# Deployment name = your custom label; model name = Azure model identifier
-chat_deployment_name  = "chat"
-chat_model_name       = "gpt-4o-mini"
-chat_model_version    = "2024-07-18"
-
-embedding_deployment_name = "embeddings"
-embedding_model_name      = "text-embedding-ada-002"
-embedding_model_version   = "2"
+openai_deployments = [
+  {
+    name          = "chat"
+    model_name    = "gpt-4o-mini"
+    model_version = "2024-07-18"
+    capacity      = 10
+    sku_name      = "GlobalStandard"
+  },
+  {
+    name          = "embeddings"
+    model_name    = "text-embedding-ada-002"
+    model_version = "2"
+    capacity      = 10
+    sku_name      = "Standard"
+  },
+]
 
 search_location     = "eastus"
 search_sku          = "free"
