@@ -88,14 +88,15 @@ moved {
 }
 
 module "ai" {
-  source              = "./modules/ai"
-  environment         = var.environment
-  project_name        = var.project_name
-  location            = var.ai_location
-  resource_group_name = module.rg.name
-  name_suffix         = var.name_suffix
-  deployments         = var.ai_deployments
-  tags                = local.tags
+  source                = "./modules/ai"
+  environment           = var.environment
+  project_name          = var.project_name
+  location              = var.ai_location
+  resource_group_name   = module.rg.name
+  name_suffix           = var.name_suffix
+  deployments           = var.ai_deployments
+  admin_group_object_id = var.sql_aad_admin_object_id
+  tags                  = local.tags
 }
 
 module "search" {

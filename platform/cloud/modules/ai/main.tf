@@ -11,6 +11,11 @@ variable "tags" {
   default = {}
 }
 
+variable "admin_group_object_id" {
+  type        = string
+  description = "Object ID of the AAD admin group (developers + CI/CD SP). Members get Cognitive Services User on this resource."
+}
+
 variable "deployments" {
   type = list(object({
     name                   = string
@@ -44,6 +49,12 @@ resource "azurerm_cognitive_account" "this" {
   identity {
     type = "SystemAssigned"
   }
+}
+
+resource "azurerm_role_assignment" "admin_group_ai_user" {
+  scope                = azurerm_cognitive_account.this.id
+  role_definition_name = "Cognitive Services User"
+  principal_id         = var.admin_group_object_id
 }
 
 resource "azurerm_cognitive_deployment" "this" {
