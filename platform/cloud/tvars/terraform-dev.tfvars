@@ -2,7 +2,7 @@
 sql_local_dev_ip       = "191.9.108.7" # set by setup-azure.ps1
 project_name           = "agenticnet"
 aspnetcore_environment = "Development"
-location               = "eastus2"
+location               = "eastus"
 ai_location            = "eastus2"
 sql_location           = "westus"
 
@@ -39,7 +39,6 @@ ai_deployments = [
 ]
 
 search_location = "eastus"
-cae_location    = "eastus"
 search_sku      = "free"
 search_topk     = 5
 
