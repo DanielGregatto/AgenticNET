@@ -204,10 +204,11 @@ namespace AgentInfrastructure.Orchestration
             foreach (var pluginName in agentConfig.Plugins)
             {
                 var plugin = ResolvePlugin(pluginName);
-                kernel.Plugins.AddFromObject(plugin, pluginName);
+                var skName = ToSkPluginName(pluginName);
+                kernel.Plugins.AddFromObject(plugin, skName);
 
                 if (plugin is IRAGPlugin)
-                    documentSearchPlugins.Add(pluginName);
+                    documentSearchPlugins.Add(skName);
             }
             kernel.Data["DocumentSearchPlugins"] = documentSearchPlugins;
 
@@ -405,6 +406,10 @@ namespace AgentInfrastructure.Orchestration
 
             return history;
         }
+
+        // SK only allows letters, digits, and underscores — replace "RAG:Suppliers" → "RAG_Suppliers"
+        private static string ToSkPluginName(string name) =>
+            System.Text.RegularExpressions.Regex.Replace(name, @"[^a-zA-Z0-9_]", "_");
 
         private object ResolvePlugin(string name)
         {
