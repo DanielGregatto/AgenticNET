@@ -329,7 +329,7 @@ jobs:
                     { \"name\": \"title\",       \"source\": \"/document/metadata_storage_name\" }
                   ]
                 }],
-                \"parameters\": { \"projectionMode\": \"generatedKeyAsId\" }
+                \"parameters\": { \"projectionMode\": \"skipIndexingParentDocuments\" }
               }
             }"
 
