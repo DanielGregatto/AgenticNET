@@ -37,6 +37,12 @@ variable "search_location" {
   default = ""
 }
 
+# Container App Environment uses AKS under the hood — override if region is at capacity
+variable "cae_location" {
+  type    = string
+  default = ""
+}
+
 variable "aspnetcore_environment" {
   type    = string
   default = "Development"

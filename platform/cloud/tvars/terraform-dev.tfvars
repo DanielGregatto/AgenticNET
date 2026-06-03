@@ -39,6 +39,7 @@ ai_deployments = [
 ]
 
 search_location = "eastus"
+cae_location    = "eastus"
 search_sku      = "free"
 search_topk     = 5
 

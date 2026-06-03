@@ -22,6 +22,7 @@ locals {
   }, var.tags)
   sql_location    = var.sql_location    != "" ? var.sql_location    : var.location
   search_location = var.search_location != "" ? var.search_location : var.location
+  cae_location    = var.cae_location    != "" ? var.cae_location    : var.location
 }
 
 module "rg" {
@@ -75,7 +76,7 @@ module "cae" {
   source                     = "./modules/cae"
   environment                = var.environment
   project_name               = var.project_name
-  location                   = module.rg.location
+  location                   = local.cae_location
   resource_group_name        = module.rg.name
   log_analytics_workspace_id = module.logs.id
   infrastructure_subnet_id   = module.network.subnet_containerapps_id
