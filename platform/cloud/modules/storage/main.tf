@@ -39,3 +39,10 @@ resource "azurerm_storage_container" "keys" {
   storage_account_id    = azurerm_storage_account.this.id
   container_access_type = "private"
 }
+
+# Knowledge base documents — subfolders (suppliers/, faq/) map to AI Search indexes
+resource "azurerm_storage_container" "documents" {
+  name                  = "documents"
+  storage_account_id    = azurerm_storage_account.this.id
+  container_access_type = "private"
+}

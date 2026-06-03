@@ -100,19 +100,9 @@ variable "search_sku" {
   default = "standard"
 }
 
-variable "search_index_name" {
-  type    = string
-  default = "knowledge"
-}
-
 variable "search_topk" {
   type    = number
   default = 5
-}
-
-variable "search_vector_field" {
-  type    = string
-  default = "contentVector"
 }
 
 variable "tags" {

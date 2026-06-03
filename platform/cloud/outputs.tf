@@ -31,6 +31,14 @@ output "search_endpoint" {
   value = module.search.endpoint
 }
 
+output "search_service_name" {
+  value = module.search.name
+}
+
+output "storage_account_name" {
+  value = module.storage.name
+}
+
 output "identity_client_id" {
   value = module.identity_acr_pull.client_id
 }

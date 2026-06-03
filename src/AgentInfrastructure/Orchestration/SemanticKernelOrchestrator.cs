@@ -27,7 +27,7 @@ namespace AgentInfrastructure.Orchestration
         private readonly AgentOrchestrationOptions _options;
         private readonly ILogger<SemanticKernelOrchestrator> _logger;
         private readonly IProductCatalogPlugin _productCatalogPlugin;
-        private readonly IRAGPlugin _ragPlugin;
+        private readonly IRagPluginFactory _ragPluginFactory;
         private readonly IMediatorHandler _mediator;
         private readonly IUser _user;
 
@@ -35,14 +35,14 @@ namespace AgentInfrastructure.Orchestration
             IOptions<AgentOrchestrationOptions> options,
             ILogger<SemanticKernelOrchestrator> logger,
             IProductCatalogPlugin productCatalogPlugin,
-            IRAGPlugin ragPlugin,
+            IRagPluginFactory ragPluginFactory,
             IMediatorHandler mediator,
             IUser user)
         {
             _options = options.Value;
             _logger = logger;
             _productCatalogPlugin = productCatalogPlugin;
-            _ragPlugin = ragPlugin;
+            _ragPluginFactory = ragPluginFactory;
             _mediator = mediator;
             _user = user;
         }
@@ -408,15 +408,16 @@ namespace AgentInfrastructure.Orchestration
 
         private object ResolvePlugin(string name)
         {
+            if (name.StartsWith("RAG:", StringComparison.OrdinalIgnoreCase))
+                return _ragPluginFactory.Create(name.Substring(4));
+
             switch (name)
             {
                 case "ProductCatalog":
                     return _productCatalogPlugin;
-                case "RAG":
-                    return _ragPlugin;
                 default:
                     throw new InvalidOperationException(
-                        $"Plugin '{name}' is not registered. Available plugins: ProductCatalog, RAG.");
+                        $"Plugin '{name}' is not registered. Supported: ProductCatalog, RAG:<IndexKey>.");
             }
         }
     }

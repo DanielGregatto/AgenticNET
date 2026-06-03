@@ -38,8 +38,6 @@ ai_deployments = [
   },
 ]
 
-search_location     = "eastus"
-search_sku          = "free"
-search_index_name   = "knowledge"
-search_topk         = 5
-search_vector_field = "contentVector"
+search_location = "eastus"
+search_sku      = "free"
+search_topk     = 5

@@ -46,6 +46,9 @@ jobs:
       sql_database_name: ${{ steps.tf-outputs.outputs.sql_database_name }}
       uami_name: ${{ steps.tf-outputs.outputs.uami_name }}
       sql_server_principal_id: ${{ steps.tf-outputs.outputs.sql_server_principal_id }}
+      search_service_name: ${{ steps.tf-outputs.outputs.search_service_name }}
+      storage_account_name: ${{ steps.tf-outputs.outputs.storage_account_name }}
+      ai_endpoint: ${{ steps.tf-outputs.outputs.ai_endpoint }}
     env:
       ARM_USE_OIDC: "true"
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -94,10 +97,16 @@ jobs:
           echo "container_app_name=$CONTAINER_APP_NAME" >> $GITHUB_OUTPUT
           echo "resource_group_name=$RESOURCE_GROUP_NAME" >> $GITHUB_OUTPUT
           SQL_SERVER_PRINCIPAL_ID=$(terraform -chdir=platform/cloud output -raw sql_server_principal_id)
+          SEARCH_SERVICE_NAME=$(terraform -chdir=platform/cloud output -raw search_service_name)
+          STORAGE_ACCOUNT_NAME=$(terraform -chdir=platform/cloud output -raw storage_account_name)
+          AI_ENDPOINT=$(terraform -chdir=platform/cloud output -raw ai_endpoint)
           echo "sql_server_fqdn=$SQL_SERVER_FQDN" >> $GITHUB_OUTPUT
           echo "sql_database_name=$SQL_DATABASE_NAME" >> $GITHUB_OUTPUT
           echo "uami_name=$UAMI_NAME" >> $GITHUB_OUTPUT
           echo "sql_server_principal_id=$SQL_SERVER_PRINCIPAL_ID" >> $GITHUB_OUTPUT
+          echo "search_service_name=$SEARCH_SERVICE_NAME" >> $GITHUB_OUTPUT
+          echo "storage_account_name=$STORAGE_ACCOUNT_NAME" >> $GITHUB_OUTPUT
+          echo "ai_endpoint=$AI_ENDPOINT" >> $GITHUB_OUTPUT
 
   grant-db-access:
     name: Grant UAMI DB Access (dev)
@@ -207,10 +216,153 @@ jobs:
             sleep 30
           done
 
+  setup-search:
+    name: Setup AI Search Indexes (dev)
+    runs-on: ubuntu-latest
+    needs: terraform
+    environment: development
+    env:
+      SEARCH_NAME: ${{ needs.terraform.outputs.search_service_name }}
+      STORAGE_ACCOUNT: ${{ needs.terraform.outputs.storage_account_name }}
+      AI_ENDPOINT: ${{ needs.terraform.outputs.ai_endpoint }}
+      RESOURCE_GROUP: ${{ needs.terraform.outputs.resource_group_name }}
+      SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      EMBEDDING_DEPLOYMENT: "embeddings"
+      API_VERSION: "2024-07-01"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Create indexes, data sources, skillsets and indexers
+        run: |
+          SEARCH_ENDPOINT="https://${SEARCH_NAME}.search.windows.net"
+
+          TOKEN=$(az account get-access-token --resource "https://search.azure.com/" --query accessToken -o tsv)
+          echo "::add-mask::$TOKEN"
+
+          # Derive knowledge bases from appsettings.json — single source of truth
+          KNOWLEDGE_BASES=$(jq -r '.RAGSearch.Catalogs[] | ascii_downcase' src/UI.API/appsettings.json)
+
+          search_put() {
+            curl -sf -X PUT \
+              "${SEARCH_ENDPOINT}/${1}?api-version=${API_VERSION}" \
+              -H "Authorization: Bearer ${TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "${2}" -o /dev/null
+          }
+
+          for KB in $KNOWLEDGE_BASES; do
+            INDEX_NAME="rag-${KB}"
+            echo "→ Configuring: ${KB} (index: ${INDEX_NAME})"
+
+            search_put "indexes/${INDEX_NAME}" "{
+              \"name\": \"${INDEX_NAME}\",
+              \"fields\": [
+                { \"name\": \"chunk_id\",    \"type\": \"Edm.String\", \"key\": true, \"filterable\": true },
+                { \"name\": \"parent_id\",   \"type\": \"Edm.String\", \"filterable\": true },
+                { \"name\": \"title\",       \"type\": \"Edm.String\", \"searchable\": true, \"retrievable\": true },
+                { \"name\": \"chunk\",       \"type\": \"Edm.String\", \"searchable\": true, \"retrievable\": true },
+                { \"name\": \"text_vector\", \"type\": \"Collection(Edm.Single)\",
+                  \"searchable\": true, \"retrievable\": false,
+                  \"dimensions\": 1536, \"vectorSearchProfile\": \"vector-profile\" }
+              ],
+              \"vectorSearch\": {
+                \"algorithms\": [{ \"name\": \"hnsw-config\", \"kind\": \"hnsw\", \"hnswParameters\": { \"metric\": \"cosine\" } }],
+                \"profiles\":   [{ \"name\": \"vector-profile\", \"algorithm\": \"hnsw-config\" }]
+              }
+            }"
+
+            search_put "datasources/ds-${KB}" "{
+              \"name\": \"ds-${KB}\",
+              \"type\": \"azureblob\",
+              \"credentials\": { \"connectionString\": \"ResourceId=/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.Storage/storageAccounts/${STORAGE_ACCOUNT};\" },
+              \"container\": { \"name\": \"documents\", \"query\": \"${KB}/\" }
+            }"
+
+            search_put "skillsets/ss-${KB}" "{
+              \"name\": \"ss-${KB}\",
+              \"skills\": [
+                {
+                  \"@odata.type\": \"#Microsoft.Skills.Text.SplitSkill\",
+                  \"name\": \"split\",
+                  \"textSplitMode\": \"pages\",
+                  \"maximumPageLength\": 512,
+                  \"pageOverlapLength\": 102,
+                  \"inputs\":  [{ \"name\": \"text\",      \"source\": \"/document/content\" }],
+                  \"outputs\": [{ \"name\": \"textItems\", \"targetName\": \"pages\" }]
+                },
+                {
+                  \"@odata.type\": \"#Microsoft.Skills.Text.AzureOpenAIEmbeddingSkill\",
+                  \"name\": \"embed\",
+                  \"resourceUri\": \"${AI_ENDPOINT}\",
+                  \"deploymentId\": \"${EMBEDDING_DEPLOYMENT}\",
+                  \"modelName\": \"text-embedding-ada-002\",
+                  \"inputs\":  [{ \"name\": \"text\",      \"source\": \"/document/pages/*\" }],
+                  \"outputs\": [{ \"name\": \"embedding\", \"targetName\": \"text_vector\" }]
+                }
+              ],
+              \"indexProjections\": {
+                \"selectors\": [{
+                  \"targetIndexName\": \"${INDEX_NAME}\",
+                  \"parentKeyFieldName\": \"parent_id\",
+                  \"sourceContext\": \"/document/pages/*\",
+                  \"mappings\": [
+                    { \"name\": \"chunk\",       \"source\": \"/document/pages/*\" },
+                    { \"name\": \"text_vector\", \"source\": \"/document/pages/*/text_vector\" },
+                    { \"name\": \"title\",       \"source\": \"/document/metadata_storage_name\" }
+                  ]
+                }],
+                \"parameters\": { \"projectionMode\": \"generatedKeyAsId\" }
+              }
+            }"
+
+            search_put "indexers/ix-${KB}" "{
+              \"name\": \"ix-${KB}\",
+              \"dataSourceName\": \"ds-${KB}\",
+              \"targetIndexName\": \"${INDEX_NAME}\",
+              \"skillsetName\": \"ss-${KB}\",
+              \"schedule\": { \"interval\": \"PT1H\" },
+              \"parameters\": {
+                \"batchSize\": 10,
+                \"configuration\": { \"dataToExtract\": \"contentAndMetadata\", \"parsingMode\": \"default\" }
+              },
+              \"fieldMappings\": [
+                { \"sourceFieldName\": \"metadata_storage_path\", \"targetFieldName\": \"chunk_id\" }
+              ],
+              \"outputFieldMappings\": [
+                { \"sourceFieldName\": \"/document/pages/*/text_vector\", \"targetFieldName\": \"text_vector\" }
+              ]
+            }"
+
+            echo "  ✓ ${KB} done."
+          done
+
+      - name: Trigger initial indexer run
+        run: |
+          SEARCH_ENDPOINT="https://${SEARCH_NAME}.search.windows.net"
+          TOKEN=$(az account get-access-token --resource "https://search.azure.com/" --query accessToken -o tsv)
+          echo "::add-mask::$TOKEN"
+          KNOWLEDGE_BASES=$(jq -r '.RAGSearch.Catalogs[] | ascii_downcase' src/UI.API/appsettings.json)
+
+          for KB in $KNOWLEDGE_BASES; do
+            curl -sf -X POST \
+              "${SEARCH_ENDPOINT}/indexers/ix-${KB}/run?api-version=${API_VERSION}" \
+              -H "Authorization: Bearer ${TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{}" -o /dev/null
+            echo "  ✓ ix-${KB} triggered."
+          done
+
   build-and-deploy:
     name: Build & Deploy (dev)
     runs-on: ubuntu-latest
-    needs: [test, terraform, grant-db-access]
+    needs: [test, terraform, grant-db-access, setup-search]
     environment: development
 
     steps:

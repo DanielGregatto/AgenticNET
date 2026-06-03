@@ -107,6 +107,7 @@ module "search" {
   resource_group_name = module.rg.name
   name_suffix         = var.name_suffix
   sku                 = var.search_sku
+  storage_account_id  = module.storage.id
   tags                = local.tags
 }
 
@@ -168,10 +169,8 @@ module "api" {
   embedding_endpoint  = module.ai.endpoint
   embedding_deployment = module.ai.deployments["embeddings"]
 
-  search_endpoint     = module.search.endpoint
-  search_index_name   = var.search_index_name
-  search_topk         = var.search_topk
-  search_vector_field = var.search_vector_field
+  search_endpoint = module.search.endpoint
+  search_topk     = var.search_topk
 
   storage_account_name          = module.storage.name
   appinsights_connection_string = module.logs.appinsights_connection_string

@@ -138,11 +138,10 @@ namespace IoC
             // AGENT ORCHESTRATION
             // ============================================================================
             services.AddSingleton<IEmbeddingService, AzureEmbeddingService>();
-            services.AddScoped<IRAGProvider, AzureAiSearchRagProvider>();
             services.AddScoped<IAgentOrchestrator, SemanticKernelOrchestrator>();
 
             services.AddScoped<IProductCatalogPlugin, ProductCatalogPlugin>();
-            services.AddScoped<IRAGPlugin, RAGPlugin>();
+            services.AddScoped<IRagPluginFactory, RagPluginFactory>();
         }
     }
 }
