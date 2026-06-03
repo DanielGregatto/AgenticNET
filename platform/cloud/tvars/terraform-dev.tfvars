@@ -41,3 +41,6 @@ ai_deployments = [
 search_location = "eastus"
 search_sku      = "free"
 search_topk     = 5
+
+# Set to true and push to run a full terraform destroy instead of apply
+destroy_environment = true

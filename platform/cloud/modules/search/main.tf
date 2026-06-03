@@ -35,7 +35,8 @@ resource "azurerm_search_service" "this" {
   }
 }
 
-# Grant the search service's identity read access to blob so indexers can pull documents
+# Grants the search service's system identity read access to blob so indexers can pull documents.
+# Role assignment lives here because the identity is created alongside the service.
 resource "azurerm_role_assignment" "search_blob_reader" {
   scope                = var.storage_account_id
   role_definition_name = "Storage Blob Data Reader"

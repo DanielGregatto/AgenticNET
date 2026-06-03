@@ -109,3 +109,9 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+
+variable "destroy_environment" {
+  type        = bool
+  default     = false
+  description = "Set to true to destroy all resources. Pipeline runs terraform destroy instead of apply."
+}

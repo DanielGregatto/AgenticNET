@@ -37,7 +37,8 @@ ai_deployments = [
   },
 ]
 
-search_sku          = "free"
-search_index_name   = "knowledge"
-search_topk         = 5
-search_vector_field = "contentVector"
+search_sku   = "free"
+search_topk  = 5
+
+# Set to true and push to master to run a full terraform destroy instead of apply
+destroy_environment = false
