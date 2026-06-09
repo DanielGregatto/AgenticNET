@@ -10,6 +10,10 @@ using UI.API.Controllers.Base;
 
 namespace UI.API.Controllers
 {
+    /// <summary>
+    /// Core AI endpoints. Route a message to the best specialist agent, address a named agent directly,
+    /// or list the agents registered in configuration. All endpoints require a Bearer JWT.
+    /// </summary>
     public class AgentController : CoreController
     {
         private readonly IMediatorHandler _mediator;

@@ -12,9 +12,18 @@ namespace UI.API.Configurations
                 c.SwaggerDoc("v1",
                     new OpenApiInfo
                     {
-                        Title = "API",
+                        Title = "AgenticNET API",
                         Version = "v1",
-                        Description = "..."
+                        Description =
+                            "Multi-agent AI platform built on .NET 8 and Azure.\n\n" +
+                            "Messages sent to `POST /api/v1/chat` are classified by a **RouterAgent** and dispatched " +
+                            "to the best specialist agent (GeneralAdvisor, ProductCatalog, SupplierAdvisor, ...). " +
+                            "Agents can call plugins (RAG over Azure AI Search, product catalog queries) and " +
+                            "optionally run through a **ReviewerAgent** confidence loop before the answer is returned.\n\n" +
+                            "Every response includes a `trace` array that records which agent was selected, which " +
+                            "plugins were called, and what the reviewer scored — giving full decision traceability.\n\n" +
+                            "**Authentication:** all endpoints except `/api/v1/auth/*` require " +
+                            "`Authorization: Bearer <jwt>`. Obtain a token via `POST /api/v1/auth/login`."
                     });
 
                 // Include XML comments
