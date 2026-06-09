@@ -205,9 +205,9 @@ For anyone who wants to spin up the full stack on Azure and test via API.
 #    No passwords stored anywhere - OIDC only.
 #    The script will ask for a short name suffix (max 6 chars, e.g. "abc123").
 #    This suffix is appended to globally unique Azure resource names (ACR, SQL, OpenAI, Search).
-#    Each environment already includes its name in the resource ("dev"/"prod"), so the suffix
-#    can be the same or different between environments - your choice. Once set, keep it stable
-#    for that environment; changing it later recreates every suffixed resource.
+#    Use the SAME suffix for both environments: TF_BACKEND_SUFFIX is repo-scoped (both environments
+#    share the same Terraform state storage account) and changing it moves Terraform state.
+#    Once set, keep it stable — changing it recreates every suffixed resource.
 powershell -ExecutionPolicy Bypass -File .\platform\scripts\setup-azure.ps1 dev
 powershell -ExecutionPolicy Bypass -File .\platform\scripts\setup-azure.ps1 prod
 
@@ -229,6 +229,20 @@ Once deployed, a seed user is available in the `dev` environment to start callin
 | Password | `Agenticnet@123` |
 
 Use `POST /api/v1/auth/login` with these credentials to obtain a JWT, then pass it as `Authorization: Bearer <token>` on subsequent requests.
+
+**Production:** no seed user is created. Users register via `POST /api/v1/auth/register`, which sends an email confirmation token before the account becomes active. For this to work, configure the `EmailConfig` section in `appsettings.Production.json` (or via Container App environment variables) with your SMTP provider before going live:
+
+```json
+"EmailConfig": {
+  "Host": "smtp.your-provider.com",
+  "SmtpPort": 587,
+  "Email": "noreply@your-domain.com",
+  "Password": "<smtp-password>",
+  "Name": "Your App Name",
+  "UseSSL": true,
+  "MainUrl": "https://your-prod-frontend-url.com/"
+}
+```
 
 > To tear everything down, set `destroy_environment = true` in `platform/cloud/tvars/terraform-dev.tfvars` and push. The pipeline destroys all resources and skips deployment.
 

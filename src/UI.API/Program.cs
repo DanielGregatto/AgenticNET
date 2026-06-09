@@ -184,12 +184,9 @@ namespace UI.API
             // 4. Exception handling (catch unhandled exceptions)
             app.UseExceptionHandler(options => { });
 
-            // 5. Swagger UI (development only)
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+            // 5. Swagger UI
+            app.UseSwagger();
+            app.UseSwaggerUI();
 
             // 6. HTTPS redirection
             app.UseHttpsRedirection();
