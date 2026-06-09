@@ -343,9 +343,7 @@ jobs:
                 \"batchSize\": 10,
                 \"configuration\": { \"dataToExtract\": \"contentAndMetadata\", \"parsingMode\": \"default\" }
               },
-              \"fieldMappings\": [
-                { \"sourceFieldName\": \"metadata_storage_path\", \"targetFieldName\": \"chunk_id\" }
-              ],
+              \"fieldMappings\": [],
               \"outputFieldMappings\": [
                 { \"sourceFieldName\": \"/document/pages/*/text_vector\", \"targetFieldName\": \"text_vector\" }
               ]
