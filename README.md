@@ -205,9 +205,9 @@ For anyone who wants to spin up the full stack on Azure and test via API.
 #    No passwords stored anywhere - OIDC only.
 #    The script will ask for a short name suffix (max 6 chars, e.g. "abc123").
 #    This suffix is appended to globally unique Azure resource names (ACR, SQL, OpenAI, Search).
-#    Each environment already includes its name in the resource ("dev"/"prod"), so the suffix
-#    can be the same or different between environments - your choice. Once set, keep it stable
-#    for that environment; changing it later recreates every suffixed resource.
+#    Use the SAME suffix for both environments: TF_BACKEND_SUFFIX is repo-scoped (both environments
+#    share the same Terraform state storage account) and changing it moves Terraform state.
+#    Once set, keep it stable — changing it recreates every suffixed resource.
 powershell -ExecutionPolicy Bypass -File .\platform\scripts\setup-azure.ps1 dev
 powershell -ExecutionPolicy Bypass -File .\platform\scripts\setup-azure.ps1 prod
 
