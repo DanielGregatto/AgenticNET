@@ -21,10 +21,6 @@ namespace Services.Features.Account.Commands.UpdatePersonalInfo
                 .NotEmpty().WithMessage(localizer["Account_PhoneRequired"])
                 .Must(handlerValidation.IsValidPhoneNumber).WithMessage(localizer["Account_PhoneInvalid"]);
 
-            RuleFor(x => x.CPF_CNPJ)
-                .NotEmpty().WithMessage(localizer["Account_CpfRequired"])
-                .Must(handlerValidation.IsValidCPFOrCNPJ).WithMessage(localizer["Account_CpfCnpjInvalid"]);
-
             RuleFor(x => x.DateOfBirth)
                 .LessThan(DateTime.Now).WithMessage(localizer["Account_DateOfBirthInvalid"])
                 .When(x => x.DateOfBirth.HasValue);

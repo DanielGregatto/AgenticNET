@@ -40,7 +40,7 @@ namespace Services.Features.Account.Queries.GetUserProfile
                 Id = userId,
                 Email = user.Email ?? "",
                 FullName = user.FullName,
-                CPF_CNPJ = user.CPF_CNPJ,
+                TaxId = user.TaxId,
                 DateOfBirth = user.DateOfBirth,
                 PhoneNumber = user.PhoneNumber,
                 Street = user.Street,

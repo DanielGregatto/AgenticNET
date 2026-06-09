@@ -27,7 +27,7 @@ namespace AgentInfrastructure.Orchestration
         private readonly AgentOrchestrationOptions _options;
         private readonly ILogger<SemanticKernelOrchestrator> _logger;
         private readonly IProductCatalogPlugin _productCatalogPlugin;
-        private readonly IRAGPlugin _ragPlugin;
+        private readonly IRagPluginFactory _ragPluginFactory;
         private readonly IMediatorHandler _mediator;
         private readonly IUser _user;
 
@@ -35,14 +35,14 @@ namespace AgentInfrastructure.Orchestration
             IOptions<AgentOrchestrationOptions> options,
             ILogger<SemanticKernelOrchestrator> logger,
             IProductCatalogPlugin productCatalogPlugin,
-            IRAGPlugin ragPlugin,
+            IRagPluginFactory ragPluginFactory,
             IMediatorHandler mediator,
             IUser user)
         {
             _options = options.Value;
             _logger = logger;
             _productCatalogPlugin = productCatalogPlugin;
-            _ragPlugin = ragPlugin;
+            _ragPluginFactory = ragPluginFactory;
             _mediator = mediator;
             _user = user;
         }
@@ -75,6 +75,7 @@ namespace AgentInfrastructure.Orchestration
 
         public async Task<Result<string>> RouteAsync(
             string userMessage,
+            bool canUseDefaultAgent = true,
             CancellationToken cancellationToken = default)
         {
             var routerConfig = _options.Agents.FirstOrDefault(a =>
@@ -84,8 +85,17 @@ namespace AgentInfrastructure.Orchestration
                 return Result<string>.Failure(
                     $"Router agent '{_options.RouterAgentName}' is not registered in AgentOrchestration:Agents.");
 
+            // Collect reviewer agent names — they are internal and must never be routing targets
+            var reviewerNames = _options.Agents
+                .Where(a => !string.IsNullOrWhiteSpace(a.Review?.AgentReviewerName))
+                .Select(a => a.Review.AgentReviewerName)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
             var candidates = GetRegisteredAgents()
-                .Where(a => !string.Equals(a.Name, _options.RouterAgentName, StringComparison.OrdinalIgnoreCase))
+                .Where(a =>
+                    !string.Equals(a.Name, _options.RouterAgentName, StringComparison.OrdinalIgnoreCase) &&
+                    !reviewerNames.Contains(a.Name) &&
+                    (canUseDefaultAgent || !string.Equals(a.Name, _options.DefaultAgentName, StringComparison.OrdinalIgnoreCase)))
                 .ToList();
 
             if (!candidates.Any())
@@ -144,7 +154,7 @@ namespace AgentInfrastructure.Orchestration
 
             var traceContext = new TraceContext();
 
-            var routeResult = await RouteAsync(userMessage, cancellationToken);
+            var routeResult = await RouteAsync(userMessage, canUseDefaultAgent, cancellationToken);
 
             string resolvedAgentName;
 
@@ -204,10 +214,11 @@ namespace AgentInfrastructure.Orchestration
             foreach (var pluginName in agentConfig.Plugins)
             {
                 var plugin = ResolvePlugin(pluginName);
-                kernel.Plugins.AddFromObject(plugin, pluginName);
+                var skName = ToSkPluginName(pluginName);
+                kernel.Plugins.AddFromObject(plugin, skName);
 
                 if (plugin is IRAGPlugin)
-                    documentSearchPlugins.Add(pluginName);
+                    documentSearchPlugins.Add(skName);
             }
             kernel.Data["DocumentSearchPlugins"] = documentSearchPlugins;
 
@@ -406,17 +417,22 @@ namespace AgentInfrastructure.Orchestration
             return history;
         }
 
+        // SK only allows letters, digits, and underscores — replace "RAG:Suppliers" → "RAG_Suppliers"
+        private static string ToSkPluginName(string name) =>
+            System.Text.RegularExpressions.Regex.Replace(name, @"[^a-zA-Z0-9_]", "_");
+
         private object ResolvePlugin(string name)
         {
+            if (name.StartsWith("RAG:", StringComparison.OrdinalIgnoreCase))
+                return _ragPluginFactory.Create(name.Substring(4));
+
             switch (name)
             {
                 case "ProductCatalog":
                     return _productCatalogPlugin;
-                case "RAG":
-                    return _ragPlugin;
                 default:
                     throw new InvalidOperationException(
-                        $"Plugin '{name}' is not registered. Available plugins: ProductCatalog, RAG.");
+                        $"Plugin '{name}' is not registered. Supported: ProductCatalog, RAG:<IndexKey>.");
             }
         }
     }

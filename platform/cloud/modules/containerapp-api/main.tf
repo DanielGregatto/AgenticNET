@@ -24,19 +24,9 @@ variable "tags" {
   default = {}
 }
 
-variable "search_index_name" {
-  type    = string
-  default = "knowledge"
-}
-
 variable "search_topk" {
   type    = number
   default = 5
-}
-
-variable "search_vector_field" {
-  type    = string
-  default = "contentVector"
 }
 
 resource "azurerm_container_app" "this" {
@@ -120,18 +110,8 @@ resource "azurerm_container_app" "this" {
       }
 
       env {
-        name  = "RAGSearch__IndexName"
-        value = var.search_index_name
-      }
-
-      env {
         name  = "RAGSearch__TopK"
         value = tostring(var.search_topk)
-      }
-
-      env {
-        name  = "RAGSearch__VectorFieldName"
-        value = var.search_vector_field
       }
 
       env {

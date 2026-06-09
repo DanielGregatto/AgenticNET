@@ -61,7 +61,7 @@ public class GetUserProfileQueryHandlerTests
         result.Data.Id.Should().Be(userId);
         result.Data.Email.Should().Be(existingUser.Email);
         result.Data.FullName.Should().Be(existingUser.FullName);
-        result.Data.CPF_CNPJ.Should().Be(existingUser.CPF_CNPJ);
+        result.Data.TaxId.Should().Be(existingUser.TaxId);
         result.Data.PhoneNumber.Should().Be(existingUser.PhoneNumber);
     }
 

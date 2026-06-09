@@ -37,6 +37,12 @@ variable "search_location" {
   default = ""
 }
 
+# Container App Environment uses AKS under the hood — override if region is at capacity
+variable "cae_location" {
+  type    = string
+  default = ""
+}
+
 variable "aspnetcore_environment" {
   type    = string
   default = "Development"
@@ -100,22 +106,18 @@ variable "search_sku" {
   default = "standard"
 }
 
-variable "search_index_name" {
-  type    = string
-  default = "knowledge"
-}
-
 variable "search_topk" {
   type    = number
   default = 5
 }
 
-variable "search_vector_field" {
-  type    = string
-  default = "contentVector"
-}
-
 variable "tags" {
   type    = map(string)
   default = {}
+}
+
+variable "destroy_environment" {
+  type        = bool
+  default     = false
+  description = "Set to true to destroy all resources. Pipeline runs terraform destroy instead of apply."
 }

@@ -9,7 +9,7 @@ namespace Services.Features.Account.Commands.UpdatePersonalInfo
     {
         public string FullName { get; set; }
         public string PhoneNumber { get; set; }
-        public string CPF_CNPJ { get; set; }
+        public string? TaxId { get; set; }
         public DateTime? DateOfBirth { get; set; }
     }
 }

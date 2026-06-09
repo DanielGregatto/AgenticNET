@@ -68,7 +68,7 @@ namespace IoC
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
             // AutoMapper for object-to-object mapping
-            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+            services.AddAutoMapper(cfg => cfg.AddMaps(AppDomain.CurrentDomain.GetAssemblies()));
 
             // Current user abstraction for accessing authenticated user info
             services.AddScoped<IUser, AspNetUser>();
@@ -103,9 +103,6 @@ namespace IoC
             // Browser detection and user agent parsing
             services.AddScoped<IHandlerBrowser, HandlerBrowser>();
 
-            // Image processing and manipulation utilities
-            services.AddScoped<IHandlerImage, HandlerImage>();
-
             // Temporary data storage via cookies
             services.AddScoped<IHandlerTempInfo, HandlerCookie>();
 
@@ -138,11 +135,10 @@ namespace IoC
             // AGENT ORCHESTRATION
             // ============================================================================
             services.AddSingleton<IEmbeddingService, AzureEmbeddingService>();
-            services.AddScoped<IRAGProvider, AzureAiSearchRagProvider>();
             services.AddScoped<IAgentOrchestrator, SemanticKernelOrchestrator>();
 
             services.AddScoped<IProductCatalogPlugin, ProductCatalogPlugin>();
-            services.AddScoped<IRAGPlugin, RAGPlugin>();
+            services.AddScoped<IRagPluginFactory, RagPluginFactory>();
         }
     }
 }

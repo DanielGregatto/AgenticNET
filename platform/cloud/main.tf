@@ -22,6 +22,7 @@ locals {
   }, var.tags)
   sql_location    = var.sql_location    != "" ? var.sql_location    : var.location
   search_location = var.search_location != "" ? var.search_location : var.location
+  cae_location    = var.cae_location    != "" ? var.cae_location    : var.location
 }
 
 module "rg" {
@@ -75,7 +76,7 @@ module "cae" {
   source                     = "./modules/cae"
   environment                = var.environment
   project_name               = var.project_name
-  location                   = module.rg.location
+  location                   = local.cae_location
   resource_group_name        = module.rg.name
   log_analytics_workspace_id = module.logs.id
   infrastructure_subnet_id   = module.network.subnet_containerapps_id
@@ -107,6 +108,7 @@ module "search" {
   resource_group_name = module.rg.name
   name_suffix         = var.name_suffix
   sku                 = var.search_sku
+  storage_account_id  = module.storage.id
   tags                = local.tags
 }
 
@@ -148,6 +150,23 @@ module "sql" {
   depends_on = [module.identity_acr_pull]
 }
 
+# Grants the dev admin group Search RBAC so developers running locally can query and manage indexes.
+# The group (sql-admins-dev-agenticnet) is created by setup-azure.ps1 and already contains the developer.
+# Skipped in prod — only the UAMI should have Search access there.
+resource "azurerm_role_assignment" "dev_group_search_reader" {
+  count                = var.environment == "dev" ? 1 : 0
+  scope                = module.search.id
+  role_definition_name = "Search Index Data Reader"
+  principal_id         = var.sql_aad_admin_object_id
+}
+
+resource "azurerm_role_assignment" "dev_group_search_contributor" {
+  count                = var.environment == "dev" ? 1 : 0
+  scope                = module.search.id
+  role_definition_name = "Search Index Data Contributor"
+  principal_id         = var.sql_aad_admin_object_id
+}
+
 module "api" {
   source                       = "./modules/containerapp-api"
   environment                  = var.environment
@@ -168,10 +187,8 @@ module "api" {
   embedding_endpoint  = module.ai.endpoint
   embedding_deployment = module.ai.deployments["embeddings"]
 
-  search_endpoint     = module.search.endpoint
-  search_index_name   = var.search_index_name
-  search_topk         = var.search_topk
-  search_vector_field = var.search_vector_field
+  search_endpoint = module.search.endpoint
+  search_topk     = var.search_topk
 
   storage_account_name          = module.storage.name
   appinsights_connection_string = module.logs.appinsights_connection_string

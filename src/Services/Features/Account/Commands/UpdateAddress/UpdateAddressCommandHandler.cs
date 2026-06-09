@@ -75,7 +75,7 @@ namespace Services.Features.Account.Commands.UpdateAddress
                 Id = UserID,
                 Email = user.Email ?? "",
                 FullName = user.FullName,
-                CPF_CNPJ = user.CPF_CNPJ,
+                TaxId = user.TaxId,
                 DateOfBirth = user.DateOfBirth,
                 PhoneNumber = user.PhoneNumber,
                 Street = user.Street,

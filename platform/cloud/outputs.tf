@@ -27,8 +27,20 @@ output "ai_endpoint" {
   value = module.ai.endpoint
 }
 
+output "ai_foundry_endpoint" {
+  value = module.ai.foundry_endpoint
+}
+
 output "search_endpoint" {
   value = module.search.endpoint
+}
+
+output "search_service_name" {
+  value = module.search.name
+}
+
+output "storage_account_name" {
+  value = module.storage.name
 }
 
 output "identity_client_id" {

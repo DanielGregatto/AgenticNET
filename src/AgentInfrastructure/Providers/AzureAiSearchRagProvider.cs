@@ -3,10 +3,8 @@ using Azure;
 using Azure.Identity;
 using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
-using Domain.Configs;
 using Domain.Contracts.Common;
 using Domain.Enums;
-using Microsoft.Extensions.Options;
 using System;
 using System.Text;
 using System.Threading;
@@ -14,50 +12,31 @@ using System.Threading.Tasks;
 
 namespace AgentInfrastructure.Providers
 {
-    /// <summary>
-    /// Provides a retrieval-augmented generation (RAG) provider that uses Azure AI Search to retrieve relevant
-    /// information based on vector embeddings.
-    /// </summary>
-    /// <remarks>This class integrates with Azure AI Search and an embedding service to perform semantic
-    /// search over indexed documents. It is typically used to enhance generative AI applications by supplying
-    /// contextually relevant information from a knowledge base. Thread safety is not guaranteed; create separate
-    /// instances for concurrent use.</remarks>
     public class AzureAiSearchRagProvider : IRAGProvider
     {
-        private readonly RAGSearchOptions _options;
+        private readonly string _vectorFieldName;
+        private readonly int _topK;
         private readonly IEmbeddingService _embeddingService;
         private readonly SearchClient _searchClient;
 
         public AzureAiSearchRagProvider(
-            IOptions<RAGSearchOptions> options,
+            string endpoint,
+            string indexName,
+            string vectorFieldName,
+            int topK,
             IEmbeddingService embeddingService)
         {
-            _options = options.Value;
+            _vectorFieldName = vectorFieldName;
+            _topK = topK;
             _embeddingService = embeddingService;
 
             var credential = new ChainedTokenCredential(
                 new AzureCliCredential(),
                 new DefaultAzureCredential());
 
-            _searchClient = new SearchClient(
-                new Uri(_options.Endpoint),
-                _options.IndexName,
-                credential);
+            _searchClient = new SearchClient(new Uri(endpoint), indexName, credential);
         }
 
-        /// <summary>
-        /// Executes a semantic search against the knowledge base using the specified query and returns the formatted
-        /// results asynchronously.
-        /// </summary>
-        /// <remarks>The returned string includes the title and content of each matching entry, separated
-        /// by delimiters. If the search fails due to an external service error, the result will indicate failure with
-        /// an appropriate error message.</remarks>
-        /// <param name="query">The search query to use for retrieving relevant information from the knowledge base. Cannot be null or
-        /// empty.</param>
-        /// <param name="cancellationToken">A cancellation token that can be used to cancel the search operation.</param>
-        /// <returns>A task that represents the asynchronous operation. The task result contains a Result object with a formatted
-        /// string of search results if successful; if no relevant information is found, the result indicates not found;
-        /// if an error occurs, the result contains error details.</returns>
         public async Task<Result<string>> SearchAsync(string query, CancellationToken cancellationToken = default)
         {
             try
@@ -69,14 +48,14 @@ namespace AgentInfrastructure.Providers
 
                 var vectorQuery = new VectorizedQuery(embeddingResult.Data)
                 {
-                    KNearestNeighborsCount = _options.TopK,
-                    Fields = { _options.VectorFieldName }
+                    KNearestNeighborsCount = _topK,
+                    Fields = { _vectorFieldName }
                 };
 
                 var searchOptions = new SearchOptions
                 {
                     VectorSearch = new() { Queries = { vectorQuery } },
-                    Size = _options.TopK,
+                    Size = _topK,
                     Select = { "chunk_id", "parent_id", "title", "chunk" }
                 };
 

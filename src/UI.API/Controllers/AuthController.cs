@@ -22,6 +22,11 @@ using UI.API.Controllers.Base;
 
 namespace UI.API.Controllers
 {
+    /// <summary>
+    /// Authentication and token management. Obtain a JWT via login, register a new account,
+    /// reset a forgotten password, refresh tokens, or sign in with Google or Facebook.
+    /// No Bearer token is required except for <c>POST /api/v1/auth/start-refresh</c>.
+    /// </summary>
     public class AuthController : CoreController
     {
         private readonly IMediatorHandler _mediator;
@@ -42,14 +47,9 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Authenticates a user with the provided credentials and returns a login response.
+        /// Authenticate with email and password and receive a JWT access token and refresh token.
         /// </summary>
-        /// <remarks>This endpoint expects a POST request with user credentials in the request body. If
-        /// the credentials are valid, a successful response with login information is returned; otherwise, an error
-        /// response is provided.</remarks>
-        /// <param name="command">The login command containing the user's email and password.</param>
-        /// <returns>An <see cref="IActionResult"/> containing a <see cref="SuccessResponse{T}"/> with login details if
-        /// authentication is successful, or an <see cref="ErrorResponseDto"/> if authentication fails.</returns>
+        /// <param name="command">Email and password credentials.</param>
         [HttpPost("v1/auth/login")]
         [ProducesResponseType(typeof(SuccessResponse<LoginDto>), 200)]
         [ProducesResponseType(typeof(ErrorResponseDto), 404)]
@@ -69,14 +69,9 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Registers a new user account using the provided registration details.
+        /// Create a new user account and trigger an email confirmation link.
         /// </summary>
-        /// <remarks>This endpoint creates a new user account and initiates the email confirmation
-        /// process.  The client must provide all required registration fields in the request body.  If registration is
-        /// successful, an email confirmation link is generated and sent to the user.</remarks>
-        /// <param name="command">The registration command containing user information such as email, password, and confirmation password.</param>
-        /// <returns>An <see cref="IActionResult"/> containing a <see cref="SuccessResponse{T}"/> with the registered user
-        /// details if successful;  otherwise, a response indicating the reason for failure.</returns>
+        /// <param name="command">Email, password, and confirmation password for the new account.</param>
         [HttpPost("v1/auth/register")]
         [ProducesResponseType(typeof(SuccessResponse<RegisterDto>), 200)]
         public async Task<IActionResult> Register([FromBody] RegisterCommand command)
@@ -97,14 +92,10 @@ namespace UI.API.Controllers
 
 
         /// <summary>
-        /// Resets a user's password using the provided reset token and new password information.
+        /// Set a new password using the reset token received by email.
         /// </summary>
-        /// <remarks>This endpoint is typically used as part of a password recovery workflow. The reset
-        /// token must be valid and not expired. The new password and confirmation must match and meet any password
-        /// policy requirements.</remarks>
-        /// <param name="command">The command containing the user's email address, reset token, new password, and password confirmation.</param>
-        /// <returns>An <see cref="IActionResult"/> containing a <see cref="SuccessResponse{T}"/> with password reset details if
-        /// successful, or an <see cref="ErrorResponseDto"/> with error information if the operation fails.</returns>
+        /// <remarks>The reset token is delivered via the forgot-password flow and expires after a short window.</remarks>
+        /// <param name="command">Email address, the reset token from the email link, and the new password.</param>
         [HttpPost("v1/auth/reset-password")]
         [ProducesResponseType(typeof(SuccessResponse<ResetPasswordDto>), 200)]
         [ProducesResponseType(typeof(ErrorResponseDto), 404)]
@@ -124,14 +115,9 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Initiates the password reset process for a user by sending a password reset email to the specified address.
+        /// Request a password reset link to be sent to the given email address.
         /// </summary>
-        /// <remarks>This endpoint does not reveal whether the email address exists in the system to
-        /// prevent user enumeration.  The response will indicate success if the password reset process is initiated, or
-        /// an error if the user is not found.</remarks>
-        /// <param name="command">The command containing the email address of the user who has forgotten their password.</param>
-        /// <returns>An <see cref="IActionResult"/> containing a <see cref="SuccessResponse{T}"/> with password reset details if
-        /// the email is found;  otherwise, an <see cref="ErrorResponseDto"/> indicating that the user was not found.</returns>
+        /// <param name="command">The email address of the account to recover.</param>
         [HttpPost("v1/auth/forgot-password")]
         [ProducesResponseType(typeof(SuccessResponse<ForgotPasswordDto>), 200)]
         [ProducesResponseType(typeof(ErrorResponseDto), 404)]
@@ -151,16 +137,9 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Refreshes the access token using a valid refresh token.
+        /// Exchange a valid refresh token for a new access token and refresh token pair.
         /// </summary>
-        /// <remarks>This endpoint is used to obtain a new access token when the current one has
-        /// expired, provided a valid refresh token is supplied. The response will indicate success or provide error
-        /// details if the refresh token is invalid or expired.</remarks>
-        /// <param name="command">The command containing the user identifier and refresh token to be validated and exchanged for a new access
-        /// token.</param>
-        /// <returns>An <see cref="IActionResult"/> containing a <see cref="SuccessResponse{T}"/> with the new access token and
-        /// related login information if the refresh is successful; otherwise, an <see cref="ErrorResponseDto"/>
-        /// describing the failure.</returns>
+        /// <param name="command">User ID and the current refresh token.</param>
         [HttpPost("v1/auth/refresh")]
         [ProducesResponseType(typeof(SuccessResponse<LoginDto>), 200)]
         [ProducesResponseType(typeof(ErrorResponseDto), 404)]
@@ -180,14 +159,8 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Initiates the refresh token process for the currently authenticated user.
+        /// Issue a new refresh token for the currently authenticated user. Requires a valid Bearer JWT.
         /// </summary>
-        /// <remarks>This endpoint is accessible only to authenticated users. It starts the process of
-        /// issuing a new refresh token and access token for the user associated with the current authentication
-        /// context.</remarks>
-        /// <returns>An <see cref="IActionResult"/> containing a <see cref="SuccessResponse{T}"/> with a <see cref="LoginDto"/>
-        /// if the refresh process succeeds; otherwise, an <see cref="ErrorResponseDto"/> with error details and a 401
-        /// status code if the operation fails.</returns>
         [Authorize]
         [HttpPost("v1/auth/start-refresh")]
         [ProducesResponseType(typeof(SuccessResponse<LoginDto>), 200)]
@@ -213,14 +186,10 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Confirms a user's email address using the specified confirmation token.
+        /// Confirm a user's email address. Called automatically when the user clicks the link in the confirmation email.
         /// </summary>
-        /// <remarks>This endpoint is typically called when a user clicks the email confirmation link sent
-        /// to their email address during registration or email change processes.</remarks>
-        /// <param name="email">The email address of the user to confirm. Cannot be null or empty.</param>
-        /// <param name="token">The email confirmation token associated with the user. Cannot be null or empty.</param>
-        /// <returns>An <see cref="IActionResult"/> that redirects to a confirmation page if the email is successfully confirmed;
-        /// otherwise, a response indicating the error.</returns>
+        /// <param name="email">The email address being confirmed.</param>
+        /// <param name="token">The one-time confirmation token from the email link.</param>
         [HttpGet("v1/auth/email-confirmed")]
         [ProducesResponseType(typeof(SuccessResponse<UriBuilder>), 200)]
         [ProducesResponseType(typeof(ErrorResponseDto), 404)]
@@ -246,12 +215,8 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Initiates the Google authentication process by redirecting the user to the Google login page.
+        /// Redirect the browser to Google's OAuth 2.0 consent screen to begin social sign-in.
         /// </summary>
-        /// <remarks>This endpoint starts an OAuth 2.0 authentication flow with Google. Upon successful
-        /// authentication, the user is redirected back to the application via the configured callback
-        /// endpoint.</remarks>
-        /// <returns>A <see cref="ChallengeResult"/> that redirects the user to Google's authentication page.</returns>
         [HttpGet("v1/auth/google-login")]
         [ProducesResponseType(typeof(ChallengeResult), 200)]
         public IActionResult GoogleLogin()
@@ -265,13 +230,8 @@ namespace UI.API.Controllers
 
 
         /// <summary>
-        /// Initiates the Facebook OAuth login process by redirecting the user to Facebook for authentication.
+        /// Redirect the browser to Facebook's OAuth consent screen to begin social sign-in.
         /// </summary>
-        /// <remarks>This endpoint starts the external login flow using Facebook as the authentication
-        /// provider. Upon successful authentication, the user is redirected back to the application via the configured
-        /// callback endpoint.</remarks>
-        /// <returns>A challenge result that redirects the user to Facebook's login page. The response will be a <see
-        /// cref="SuccessResponse{T}"/> containing a <see cref="ChallengeResult"/> if the operation is successful.</returns>
         [HttpGet("v1/auth/facebook-login")]
         [ProducesResponseType(typeof(SuccessResponse<ChallengeResult>), 200)]
         public IActionResult FacebookLogin()
@@ -284,19 +244,12 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Handles the callback from an external authentication provider and completes the external login process.
+        /// OAuth callback invoked by Google or Facebook after the user approves the consent screen.
+        /// Issues a JWT and redirects to the configured frontend URI with the token in the query string.
         /// </summary>
-        /// <remarks>This endpoint is invoked by external authentication providers after the
-        /// user has completed authentication. It processes the authentication result, issues a token if successful, and
-        /// redirects the user accordingly.</remarks>
-        /// <param name="returnUrl">The URL to redirect to after successful authentication. If <see langword="null"/>, a default redirect URI is
-        /// used.</param>
-        /// <param name="remoteError">An error message returned by the external provider, if any. If not <see langword="null"/>, the login process
-        /// is halted and an error response is returned.</param>
-        /// <param name="provider">The name of the external authentication provider (e.g., "Google", "Facebook").</param>
-        /// <returns>An <see cref="IActionResult"/> that redirects the user to the specified return URL with an authentication
-        /// token on success, or returns an error response if authentication fails or an error is reported by the
-        /// external provider.</returns>
+        /// <param name="returnUrl">Optional URL to redirect to after authentication.</param>
+        /// <param name="remoteError">Error message from the external provider, if any.</param>
+        /// <param name="provider">Name of the external provider (e.g. "Google", "Facebook").</param>
         [AllowAnonymous]
         [HttpGet("v1/auth/external-login-callback")]
         [ProducesResponseType(typeof(SuccessResponse<RedirectResult>), 200)]

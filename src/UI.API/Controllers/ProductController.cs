@@ -13,6 +13,10 @@ using UI.API.Controllers.Base;
 
 namespace UI.API.Controllers
 {
+    /// <summary>
+    /// Product catalog CRUD. Read operations are open (no token required); write operations
+    /// (create, update, delete) require a Bearer JWT.
+    /// </summary>
     public class ProductController : CoreController
     {
         private readonly IMediatorHandler _mediator;
@@ -27,13 +31,8 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Retrieves all products available in the system.
+        /// Return all products in the catalog. No authentication required.
         /// </summary>
-        /// <remarks>This endpoint returns a collection of products. Access may be restricted based on
-        /// user permissions.</remarks>
-        /// <returns>An <see cref="IActionResult"/> containing a <see cref="SuccessResponse{T}"/> with a list of <see
-        /// cref="ProductResult"/> objects if successful; otherwise, an <see cref="ErrorResponseDto"/> describing the
-        /// error.</returns>
         [HttpGet("v1/products")]
         [ProducesResponseType(typeof(SuccessResponse<IEnumerable<ProductResult>>), 200)]
         [ProducesResponseType(typeof(ErrorResponseDto), 401)]
@@ -56,14 +55,9 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Retrieves the details of a product by its unique identifier.
+        /// Return a single product by its ID. No authentication required.
         /// </summary>
-        /// <remarks>This endpoint returns a <see cref="SuccessResponse{T}"/> containing the product
-        /// information if the specified product exists and the caller is authorized. If the product is not found, or if
-        /// the caller lacks the necessary permissions, an appropriate error response is returned.</remarks>
-        /// <param name="id">The unique identifier of the product to retrieve.</param>
-        /// <returns>An <see cref="IActionResult"/> containing a <see cref="SuccessResponse{ProductDto}"/> with the product
-        /// details if found; otherwise, an <see cref="ErrorResponseDto"/> describing the error.</returns>
+        /// <param name="id">The product's unique identifier (GUID).</param>
         [HttpGet("v1/products/{id}")]
         [ProducesResponseType(typeof(SuccessResponse<ProductResult>), 200)]
         [ProducesResponseType(typeof(ErrorResponseDto), 401)]
@@ -86,19 +80,12 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Searches for products and returns a paginated list of results.
+        /// Search products with pagination and optional sorting. No authentication required.
         /// </summary>
-        /// <remarks>This endpoint supports pagination and optional sorting of product results. The caller
-        /// can specify the page index, page size, and sorting options to control the returned data. Only accessible to
-        /// authorized users.</remarks>
-        /// <param name="pageIndex">The one-based index of the page to retrieve. Must be greater than or equal to 1. Defaults to 1.</param>
-        /// <param name="pageSize">The number of products to include in each page. Must be greater than 0. Defaults to 10.</param>
-        /// <param name="orderByProperty">The name of the product property to sort by. If <see langword="null"/>, the default sort order is applied.</param>
-        /// <param name="orderByDescending"><see langword="true"/> to sort the results in descending order; otherwise, <see langword="false"/> for
-        /// ascending order. Defaults to <see langword="false"/>.</param>
-        /// <returns>An <see cref="IActionResult"/> containing a <see cref="SuccessResponse{T}"/> with a <see
-        /// cref="PaginatedResponseDto{ProductDto}"/> of products if successful; otherwise, an <see
-        /// cref="ErrorResponseDto"/> describing the error.</returns>
+        /// <param name="pageIndex">1-based page number. Defaults to 1.</param>
+        /// <param name="pageSize">Items per page. Defaults to 10.</param>
+        /// <param name="orderByProperty">Property name to sort by. Omit for default order.</param>
+        /// <param name="orderByDescending">Set to true for descending order. Defaults to false.</param>
         [HttpGet("v1/products/search")]
         [ProducesResponseType(typeof(SuccessResponse<PaginatedResponseDto<ProductResult>>), 200)]
         [ProducesResponseType(typeof(ErrorResponseDto), 401)]
@@ -132,15 +119,9 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Creates a new product using the specified command data.
+        /// Create a new product. Accepts multipart/form-data (supports image upload). Requires a Bearer JWT.
         /// </summary>
-        /// <remarks>This endpoint requires authentication and authorization. The product information must
-        /// be provided in the form data. On success, returns the details of the created product; otherwise, returns an
-        /// error response indicating the reason for failure.</remarks>
-        /// <param name="command">The command containing the product data to create. Must include all required product fields; cannot be null.</param>
-        /// <returns>An <see cref="IActionResult"/> containing a <see cref="SuccessResponse{ProductDto}"/> with the created
-        /// product details if successful, or an <see cref="ErrorResponseDto"/> describing the error if the operation
-        /// fails or the user is unauthorized.</returns>
+        /// <param name="command">Product fields including optional image file.</param>
         [HttpPost("v1/products")]
         [Authorize]
         [ProducesResponseType(typeof(SuccessResponse<ProductResult>), 200)]
@@ -162,15 +143,10 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Updates the details of an existing product identified by the specified ID.
+        /// Update an existing product. Accepts multipart/form-data (supports image upload). Requires a Bearer JWT.
         /// </summary>
-        /// <remarks>Requires authentication and appropriate authorization. Returns a success response
-        /// with the updated product information if the operation completes successfully. If the product is not found,
-        /// or if the user lacks permission, an error response is returned.</remarks>
-        /// <param name="id">The unique identifier of the product to update. Must correspond to an existing product.</param>
-        /// <param name="command">The command containing the updated product data. Must include all required fields for the update operation.</param>
-        /// <returns>An <see cref="IActionResult"/> containing a <see cref="SuccessResponse{ProductDto}"/> with the updated
-        /// product details if successful; otherwise, an <see cref="ErrorResponseDto"/> describing the error.</returns>
+        /// <param name="id">ID of the product to update.</param>
+        /// <param name="command">Updated product fields.</param>
         [HttpPut("v1/products/{id}")]
         [Authorize]
         [ProducesResponseType(typeof(SuccessResponse<ProductResult>), 200)]
@@ -194,13 +170,9 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Deletes the product with the specified identifier.
+        /// Delete a product by ID. Requires a Bearer JWT.
         /// </summary>
-        /// <remarks>Requires authorization. Returns a 200 response if the product is successfully
-        /// deleted. If the product does not exist, a 404 response is returned. If the caller is unauthorized or
-        /// forbidden, a 401 or 403 response is returned, respectively.</remarks>
-        /// <param name="id">The unique identifier of the product to delete.</param>
-        /// <returns>An <see cref="IActionResult"/> indicating the result of the delete operation.</returns>
+        /// <param name="id">ID of the product to delete.</param>
         [HttpDelete("v1/products/{id}")]
         [Authorize]
         [ProducesResponseType(200)]
