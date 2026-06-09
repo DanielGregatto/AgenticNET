@@ -98,9 +98,6 @@ namespace UI.API
             // ============================================================================
             // API CONFIGURATION
             // ============================================================================
-            // Configure AutoMapper for object-to-object mapping
-            builder.Services.AddAutoMapperConfiguration();
-
             // Configure controllers with JSON serialization options
             builder.Services.AddControllers().AddJsonOptions(options =>
             {
