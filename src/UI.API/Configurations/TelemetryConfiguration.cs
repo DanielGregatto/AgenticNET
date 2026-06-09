@@ -1,8 +1,3 @@
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-
 namespace UI.API.Configurations
 {
     /// <summary>
@@ -19,7 +14,7 @@ namespace UI.API.Configurations
         {
             var connectionString = configuration["ApplicationInsights:ConnectionString"];
 
-            if (!string.IsNullOrEmpty(connectionString))
+            if (!string.IsNullOrEmpty(connectionString) && connectionString != "<env-var-terraform-set>")
             {
                 services.AddApplicationInsightsTelemetry(options =>
                 {
@@ -38,33 +33,18 @@ namespace UI.API.Configurations
             IConfiguration configuration,
             IHostEnvironment environment)
         {
-            var connectionString = configuration["ApplicationInsights:ConnectionString"];
-
-            // Clear default providers
+            // Clear default providers (does not affect AI — registered via DI, not the builder)
             logging.ClearProviders();
 
-            // Add console logging with correlation ID support
+            // Console logging with scopes enabled so correlation IDs appear on every log line
             logging.AddSimpleConsole(options =>
             {
-                options.IncludeScopes = true;   // Include correlation ID from scopes
-                options.SingleLine = true;      // Better formatting for correlation ID
+                options.IncludeScopes = true;
+                options.SingleLine = true;
             });
 
-            // Add debug output (local development)
+            // Debug output for local development only
             logging.AddDebug();
-
-            // Add Application Insights logging provider (if configured)
-            if (!string.IsNullOrEmpty(connectionString))
-            {
-                logging.AddApplicationInsights();
-
-                // Set log level for non-production environments
-                if (!environment.IsProduction())
-                {
-                    logging.AddFilter<Microsoft.Extensions.Logging.ApplicationInsights.ApplicationInsightsLoggerProvider>(
-                        "", LogLevel.Information);
-                }
-            }
 
             return logging;
         }

@@ -27,6 +27,10 @@ output "ai_endpoint" {
   value = module.ai.endpoint
 }
 
+output "ai_foundry_endpoint" {
+  value = module.ai.foundry_endpoint
+}
+
 output "search_endpoint" {
   value = module.search.endpoint
 }
