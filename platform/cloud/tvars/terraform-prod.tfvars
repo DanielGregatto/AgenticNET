@@ -1,7 +1,8 @@
 ﻿environment            = "prod"
+sql_local_dev_ip       = "191.9.111.54" # set by setup-azure.ps1
 project_name           = "agenticnet"
 aspnetcore_environment = "Production"
-location               = "eastus2"
+location               = "eastus"
 ai_location            = "eastus2"
 sql_location           = "westus"
 
@@ -37,9 +38,9 @@ ai_deployments = [
   },
 ]
 
-search_sku   = "free"
-search_topk  = 5
+search_location = "eastus"
+search_sku      = "basic"
+search_topk     = 5
 
 # Set to true and push to master to run a full terraform destroy instead of apply
 destroy_environment = false
-sql_local_dev_ip       = "191.9.111.54" # set by setup-azure.ps1
