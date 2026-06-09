@@ -205,7 +205,9 @@ For anyone who wants to spin up the full stack on Azure and test via API.
 #    No passwords stored anywhere - OIDC only.
 #    The script will ask for a short name suffix (max 6 chars, e.g. "abc123").
 #    This suffix is appended to globally unique Azure resource names (ACR, SQL, OpenAI, Search).
-#    Use the SAME suffix for both dev and prod - it is stored as a shared repo-level variable.
+#    Each environment already includes its name in the resource ("dev"/"prod"), so the suffix
+#    can be the same or different between environments - your choice. Once set, keep it stable
+#    for that environment; changing it later recreates every suffixed resource.
 powershell -ExecutionPolicy Bypass -File .\platform\scripts\setup-azure.ps1 dev
 powershell -ExecutionPolicy Bypass -File .\platform\scripts\setup-azure.ps1 prod
 
