@@ -150,6 +150,23 @@ module "sql" {
   depends_on = [module.identity_acr_pull]
 }
 
+# Grants the dev admin group Search RBAC so developers running locally can query and manage indexes.
+# The group (sql-admins-dev-agenticnet) is created by setup-azure.ps1 and already contains the developer.
+# Skipped in prod — only the UAMI should have Search access there.
+resource "azurerm_role_assignment" "dev_group_search_reader" {
+  count                = var.environment == "dev" ? 1 : 0
+  scope                = module.search.id
+  role_definition_name = "Search Index Data Reader"
+  principal_id         = var.sql_aad_admin_object_id
+}
+
+resource "azurerm_role_assignment" "dev_group_search_contributor" {
+  count                = var.environment == "dev" ? 1 : 0
+  scope                = module.search.id
+  role_definition_name = "Search Index Data Contributor"
+  principal_id         = var.sql_aad_admin_object_id
+}
+
 module "api" {
   source                       = "./modules/containerapp-api"
   environment                  = var.environment

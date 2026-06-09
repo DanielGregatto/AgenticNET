@@ -49,6 +49,7 @@ jobs:
       search_service_name: ${{ steps.tf-outputs.outputs.search_service_name }}
       storage_account_name: ${{ steps.tf-outputs.outputs.storage_account_name }}
       ai_endpoint: ${{ steps.tf-outputs.outputs.ai_endpoint }}
+      ai_foundry_endpoint: ${{ steps.tf-outputs.outputs.ai_foundry_endpoint }}
       destroy_mode: ${{ steps.tf-outputs.outputs.destroy_mode }}
     env:
       ARM_USE_OIDC: "true"
@@ -110,6 +111,7 @@ jobs:
           SEARCH_SERVICE_NAME=$(terraform -chdir=platform/cloud output -raw search_service_name)
           STORAGE_ACCOUNT_NAME=$(terraform -chdir=platform/cloud output -raw storage_account_name)
           AI_ENDPOINT=$(terraform -chdir=platform/cloud output -raw ai_endpoint)
+          AI_FOUNDRY_ENDPOINT=$(terraform -chdir=platform/cloud output -raw ai_foundry_endpoint)
           echo "sql_server_fqdn=$SQL_SERVER_FQDN" >> $GITHUB_OUTPUT
           echo "sql_database_name=$SQL_DATABASE_NAME" >> $GITHUB_OUTPUT
           echo "uami_name=$UAMI_NAME" >> $GITHUB_OUTPUT
@@ -117,6 +119,7 @@ jobs:
           echo "search_service_name=$SEARCH_SERVICE_NAME" >> $GITHUB_OUTPUT
           echo "storage_account_name=$STORAGE_ACCOUNT_NAME" >> $GITHUB_OUTPUT
           echo "ai_endpoint=$AI_ENDPOINT" >> $GITHUB_OUTPUT
+          echo "ai_foundry_endpoint=$AI_FOUNDRY_ENDPOINT" >> $GITHUB_OUTPUT
           DESTROY=$(grep -E '^\s*destroy_environment\s*=' platform/cloud/tvars/terraform-dev.tfvars | tr -d ' ' | cut -d'=' -f2)
           echo "destroy_mode=$DESTROY" >> $GITHUB_OUTPUT
 
@@ -432,28 +435,45 @@ jobs:
           ACR_LOGIN_SERVER: ${{ needs.terraform.outputs.acr_login_server }}
           SQL_FQDN: ${{ needs.terraform.outputs.sql_server_fqdn }}
           DB_NAME: ${{ needs.terraform.outputs.sql_database_name }}
+          SEARCH_NAME: ${{ needs.terraform.outputs.search_service_name }}
+          STORAGE_NAME: ${{ needs.terraform.outputs.storage_account_name }}
+          AI_ENDPOINT: ${{ needs.terraform.outputs.ai_endpoint }}
+          AI_FOUNDRY_ENDPOINT: ${{ needs.terraform.outputs.ai_foundry_endpoint }}
           GIT_SHA: ${{ github.sha }}
         run: |
-          SUBSCRIPTION=$(az account show --query id -o tsv)
           APP_FQDN=$(az containerapp show \
             --name "$CONTAINER_APP_NAME" \
             --resource-group "$RESOURCE_GROUP" \
             --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || echo "unavailable")
-          SQL_SERVER="${SQL_FQDN%%.database.windows.net}"
-          ACR_NAME="${ACR_LOGIN_SERVER%%.*}"
-          PORTAL="https://portal.azure.com/#resource/subscriptions/$SUBSCRIPTION/resourceGroups/$RESOURCE_GROUP/providers"
+          SEARCH_ENDPOINT="https://${SEARCH_NAME}.search.windows.net"
 
           {
             echo "## Deployment Summary"
             echo ""
-            echo "| Resource | Link |"
-            echo "|----------|------|"
+            echo "| Resource | Endpoint |"
+            echo "|----------|----------|"
             echo "| Application | [https://$APP_FQDN/swagger](https://$APP_FQDN/swagger) |"
-            echo "| Resource Group | [Azure Portal](https://portal.azure.com/#resource/subscriptions/$SUBSCRIPTION/resourceGroups/$RESOURCE_GROUP/overview) |"
-            echo "| Container App | [Azure Portal]($PORTAL/Microsoft.App/containerApps/$CONTAINER_APP_NAME/overview) |"
-            echo "| Container Registry | [Azure Portal]($PORTAL/Microsoft.ContainerRegistry/registries/$ACR_NAME/overview) |"
-            echo "| SQL Database | [Azure Portal]($PORTAL/Microsoft.Sql/servers/$SQL_SERVER/databases/$DB_NAME/overview) |"
+            echo "| SQL Server | \`$SQL_FQDN\` |"
+            echo "| Container Registry | \`$ACR_LOGIN_SERVER\` |"
+            echo "| AI Search | \`$SEARCH_ENDPOINT\` |"
+            echo "| Azure OpenAI | \`$AI_ENDPOINT\` |"
+            echo "| Azure AI Foundry | \`$AI_FOUNDRY_ENDPOINT\` |"
+            echo "| Blob Storage | \`${STORAGE_NAME}.blob.core.windows.net\` |"
             echo ""
             echo "**Image:** \`$ACR_LOGIN_SERVER/agenticnet:$GIT_SHA\`"
             echo "**Commit:** \`$GIT_SHA\`"
+            echo ""
+            echo "## Local Development Setup"
+            echo ""
+            echo "Copy and run these commands to configure your local user secrets:"
+            echo ""
+            echo '```powershell'
+            echo "dotnet user-secrets set \"ConnectionStrings:DefaultConnection\" \"Server=$SQL_FQDN;Database=$DB_NAME;Authentication=Active Directory Default;Encrypt=True;MultipleActiveResultSets=True;\" --project src/UI.API"
+            echo "dotnet user-secrets set \"AgentOrchestration:Providers:AzureAI:Endpoint\" \"$AI_ENDPOINT\" --project src/UI.API"
+            echo "dotnet user-secrets set \"AgentOrchestration:Providers:AzureAIFoundry:Endpoint\" \"$AI_FOUNDRY_ENDPOINT\" --project src/UI.API"
+            echo "dotnet user-secrets set \"Embedding:Endpoint\" \"$AI_ENDPOINT\" --project src/UI.API"
+            echo "dotnet user-secrets set \"Embedding:Deployment\" \"embeddings\" --project src/UI.API"
+            echo "dotnet user-secrets set \"RAGSearch:Endpoint\" \"$SEARCH_ENDPOINT\" --project src/UI.API"
+            echo "dotnet user-secrets set \"AzureStorage:AccountName\" \"$STORAGE_NAME\" --project src/UI.API"
+            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"

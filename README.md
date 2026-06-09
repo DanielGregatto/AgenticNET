@@ -1,23 +1,38 @@
 # AgenticNET
 
-**Production-ready multi-agent AI orchestration for .NET 8 and Azure.**
+**Azure-native platform for building, deploying and operating enterprise AI applications.**
 
-AgenticNET is an open-source framework that brings intelligent, observable, configuration-driven AI agents to any .NET application — with enterprise-grade Clean Architecture, Retrieval-Augmented Generation, full decision traceability, and first-class Azure AI integration out of the box.
+AgenticNET is an open-source, Azure-native platform for building, deploying and operating enterprise AI applications with .NET. It combines intelligent routing, RAG, reviewer loops, infrastructure automation and full decision traceability into a single production-ready platform.
 
-> Built to demonstrate what a real AI backend looks like in C# — not a prototype, not a tutorial wrapper. A full production stack.
+> Not a prototype. Not a tutorial wrapper. A full production stack - built on Clean Architecture, designed to be extended without rewriting the core.
 
 ---
 
-## Why AgenticNET?
+Building an enterprise AI application requires much more than calling a model.
 
-Most AI demos in .NET are a single `kernel.InvokeAsync()` call. AgenticNET is what comes next:
+You need:
 
-- **Multi-agent routing** — a RouterAgent classifies intent and dispatches to the right specialist automatically.
-- **Pluggable RAG** — add a new knowledge base by dropping files in blob storage and adding one line of config. No code, no Terraform changes.
-- **Reviewer loop** — agents can be configured to self-critique answers and retry until a confidence threshold is met.
-- **Zero-secret Azure auth** — `AzureCliCredential` locally, Managed Identity in production. No API keys stored anywhere.
-- **Full decision audit trail** — every response includes a `trace` array showing the exact chain of decisions: which agent was selected, which functions were called, what the reviewer scored, and whether a retry was triggered. Every AI decision is observable.
-- **Fully config-driven** — agents, models, plugins, temperature, and review behaviour all live in `appsettings.json`.
+- AI orchestration
+- Retrieval
+- Security
+- Identity
+- Observability
+- Infrastructure
+- Deployment
+- Governance
+
+AgenticNET provides these capabilities as a single Azure-native platform.
+
+---
+
+## Core Platform Capabilities
+
+- **Intelligent Routing** - a RouterAgent classifies intent and dispatches to the right specialist automatically. Agents, models, plugins, temperature, and review behaviour all live in `appsettings.json` - no code changes needed to add one.
+- **Knowledge Retrieval** - multi-catalog RAG with Azure AI Search (hybrid vector + keyword). Add a knowledge base by dropping files in blob storage and adding one line of config. CI/CD provisions the index automatically.
+- **Response Validation** - confidence-gated ReviewerAgent loop. Answers are scored and improved before being returned, with configurable threshold and retry attempts.
+- **Decision Traceability** - full audit trail on every response: which agent was selected, which functions were called, what the reviewer scored, and whether a retry was triggered.
+- **Azure-Native Infrastructure** - Terraform-managed resources provisioned end-to-end. One script sets up Azure and GitHub. Push to branch, pipeline does the rest.
+- **Enterprise Security** - JWT auth, OAuth2, ASP.NET Core Identity, rate limiting and zero-secret Azure auth via Managed Identity.
 
 ---
 
@@ -27,11 +42,11 @@ Most AI demos in .NET are a single `kernel.InvokeAsync()` call. AgenticNET is wh
 POST /api/v1/chat
   └─ ChatCommandHandler (MediatR)
        └─ SemanticKernelOrchestrator
-            ├─ RouterAgent          ← classifies intent, returns agent name
-            ├─ Specialist Agent     ← GeneralAdvisor | ProductCatalog | SupplierAdvisor | ...
-            │    └─ Plugins         ← RAG:<CatalogKey> | ProductCatalog | (extensible)
-            ├─ ReviewerAgent        ← optional confidence-gated retry loop
-            └─ SaveConversationTurn ← persists history to SQL
+            ├─ RouterAgent          <- classifies intent, returns agent name
+            ├─ Specialist Agent     <- GeneralAdvisor | ProductCatalog | SupplierAdvisor | ...
+            │    └─ Plugins         <- RAG:<CatalogKey> | ProductCatalog | (extensible)
+            ├─ ReviewerAgent        <- optional confidence-gated retry loop
+            └─ SaveConversationTurn <- persists history to SQL
 ```
 
 ```
@@ -61,7 +76,7 @@ src/
 | LLMs | Azure OpenAI (GPT-4o-mini), Azure AI Foundry (DeepSeek-R1) |
 | Vector Search | Azure AI Search (hybrid: keyword + vector) |
 | Embeddings | Azure OpenAI (text-embedding-ada-002) |
-| Auth | ASP.NET Core Identity, JWT, OAuth2 (Google, Facebook) |
+| Auth | ASP.NET Core Identity, JWT, OAuth2 |
 | ORM | Entity Framework Core 8 |
 | Database | Azure SQL / SQL Server |
 | Storage | Azure Blob Storage |
@@ -77,16 +92,16 @@ Agents are defined entirely in configuration. No code changes needed to add a ne
 
 | Agent | Model | Plugin | Behaviour |
 |---|---|---|---|
-| `RouterAgent` | GPT-4o-mini | — | Classifies message → returns agent name |
-| `GeneralAdvisor` | DeepSeek-R1 | — | General-purpose fallback |
+| `RouterAgent` | GPT-4o-mini | - | Classifies message, returns agent name |
+| `GeneralAdvisor` | DeepSeek-R1 | - | General-purpose fallback |
 | `ProductCatalog` | GPT-4o-mini | ProductCatalog | Queries product database via SK function |
 | `SupplierAdvisor` | GPT-4o-mini | RAG:Suppliers | Searches knowledge base; reviewed at 0.85 confidence |
-| `ReviewerAgent` | GPT-4o-mini | — | Scores answers, instructs improvement if below threshold |
+| `ReviewerAgent` | GPT-4o-mini | - | Scores answers, instructs improvement if below threshold |
 
-### Adding an agent — zero code
+### Adding an agent - zero code
 
 ```jsonc
-// appsettings.json → AgentOrchestration:Agents
+// appsettings.json -> AgentOrchestration:Agents
 {
   "Name": "LegalAdvisor",
   "Description": "Answers regulatory and compliance questions.",
@@ -107,14 +122,14 @@ Agents are defined entirely in configuration. No code changes needed to add a ne
 
 ---
 
-## RAG — Multi-Catalog Knowledge Base
+## RAG - Multi-Catalog Knowledge Base
 
 Convention-based naming eliminates per-index configuration:
 
 ```
-Agent plugin: "RAG:Suppliers"  →  AI Search index: rag-suppliers
-Agent plugin: "RAG:FAQ"        →  AI Search index: rag-faq
-Agent plugin: "RAG:Regulations"→  AI Search index: rag-regulations
+Agent plugin: "RAG:Suppliers"   ->  AI Search index: rag-suppliers
+Agent plugin: "RAG:FAQ"         ->  AI Search index: rag-faq
+Agent plugin: "RAG:Regulations" ->  AI Search index: rag-regulations
 ```
 
 `RAGSearch:Catalogs` in `appsettings.json` is the **single source of truth**. The CI/CD pipeline reads it and provisions the full AI Search pipeline (index + data source + skillset + indexer) for each catalog automatically.
@@ -123,14 +138,14 @@ Agent plugin: "RAG:Regulations"→  AI Search index: rag-regulations
 
 Say you want to add a **Regulations** catalog alongside the existing `Suppliers` and `FAQ` ones:
 
-1. Add the new key to `appsettings.json` — `"Regulations"` is new, the others already exist:
+1. Add the new key to `appsettings.json` - `"Regulations"` is new, the others already exist:
    ```json
    "RAGSearch": { "Catalogs": ["Suppliers", "FAQ", "Regulations"] }
    ```
 2. Add `"RAG:Regulations"` to the agent's `Plugins` list in the same file.
 3. Upload `.pdf`, `.docx`, or `.txt` files to `documents/regulations/` in Azure Blob Storage.
 
-Push → CI/CD detects the new catalog, creates the `rag-regulations` index, skillset, and indexer, and triggers the initial run. **No Terraform changes. No code changes.**
+Push -> CI/CD detects the new catalog, creates the `rag-regulations` index, skillset, and indexer, and triggers the initial run. **No Terraform changes. No code changes.**
 
 ---
 
@@ -159,8 +174,8 @@ Content-Type: application/json
   "content": "Based on the knowledge base, the following suppliers...",
   "timestamp": "2026-06-08T12:00:00Z",
   "trace": [
-    { "type": "RouterDecision", "data": { "selectedAgent": "SupplierAdvisor" } },
-    { "type": "FunctionCall",   "data": { "function": "SearchDocuments", "query": "certified raw materials" } },
+    { "type": "RouterDecision",   "data": { "selectedAgent": "SupplierAdvisor" } },
+    { "type": "FunctionCall",     "data": { "function": "SearchDocuments", "query": "certified raw materials" } },
     { "type": "ReviewerDecision", "data": { "confidence": 0.91, "isValid": true } }
   ]
 }
@@ -178,7 +193,7 @@ Content-Type: application/json
 
 ## Getting Started
 
-### Deploy to Azure — no local tooling required
+### Deploy to Azure - no local tooling required
 
 For anyone who wants to spin up the full stack on Azure and test via API.
 
@@ -187,22 +202,31 @@ For anyone who wants to spin up the full stack on Azure and test via API.
 ```powershell
 # 1. One-time setup per environment.
 #    Creates the Azure service principal, OIDC federation, and all GitHub secrets automatically.
-#    No passwords stored anywhere — OIDC only.
+#    No passwords stored anywhere - OIDC only.
 #    The script will ask for a short name suffix (max 6 chars, e.g. "abc123").
 #    This suffix is appended to globally unique Azure resource names (ACR, SQL, OpenAI, Search).
-#    Use the SAME suffix for both dev and prod — it is stored as a shared repo-level variable.
+#    Use the SAME suffix for both dev and prod - it is stored as a shared repo-level variable.
 powershell -ExecutionPolicy Bypass -File .\platform\scripts\setup-azure.ps1 dev
 powershell -ExecutionPolicy Bypass -File .\platform\scripts\setup-azure.ps1 prod
 
-# 2. Push to the right branch — CI/CD does the rest
-git push origin development   # → dev environment
-git push origin master        # → production environment
+# 2. Push to the right branch - CI/CD does the rest
+git push origin development   # -> dev environment
+git push origin master        # -> production environment
 
 # 3. Follow the GitHub Actions run in your repository.
-#    When the pipeline finishes, the job summary will show the Container App URL — ready to call.
+#    When the pipeline finishes, the job summary will show the Container App URL - ready to call.
 ```
 
 The pipeline provisions all Azure resources via Terraform, builds and pushes the Docker image, sets up AI Search indexes for every catalog in `RAGSearch:Catalogs`, and deploys the Container App. **Nothing to install, nothing to configure manually.**
+
+Once deployed, a seed user is available in the `dev` environment to start calling the API immediately:
+
+| Field | Value |
+|---|---|
+| Email | `test@test.com.br` |
+| Password | `Agenticnet@123` |
+
+Use `POST /api/v1/auth/login` with these credentials to obtain a JWT, then pass it as `Authorization: Bearer <token>` on subsequent requests.
 
 > To tear everything down, set `destroy_environment = true` in `platform/cloud/tvars/terraform-dev.tfvars` and push. The pipeline destroys all resources and skips deployment.
 
@@ -214,18 +238,18 @@ Resource Group · Virtual Network · Subnets · Container App Environment · Con
 
 ---
 
-### Run Locally — for developers
+### Run Locally - for developers
 
 **Prerequisites:** Azure subscription · GitHub account · [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) (`az login`) · [GitHub CLI](https://cli.github.com) (`gh auth login`) · .NET 8 SDK
 
-> Complete steps 1, 2, and 3 from **Deploy to Azure** above first. All endpoints (SQL, OpenAI, AI Search) come from the provisioned `dev` environment — there is nothing to install locally beyond the SDK.
+> Complete steps 1, 2, and 3 from **Deploy to Azure** above first. All endpoints (SQL, OpenAI, AI Search) come from the provisioned `dev` environment - there is nothing to install locally beyond the SDK.
 
 ```powershell
 # Fork the repo on GitHub, then clone your fork
 git clone https://github.com/<your-username>/AgenticNET.git
 cd AgenticNET
 
-# Authenticate — must use terminal, not VS debugger (VS strips PATH and breaks Azure CLI auth)
+# Authenticate - must use terminal, not VS debugger (VS strips PATH and breaks Azure CLI auth)
 az login
 
 # Set user secrets
@@ -235,8 +259,9 @@ dotnet user-secrets set "AgentOrchestration:Providers:AzureAIFoundry:Endpoint" "
 dotnet user-secrets set "Embedding:Endpoint" "https://ai-dev-agenticnet-<suffix>.cognitiveservices.azure.com/" --project src/UI.API
 dotnet user-secrets set "Embedding:Deployment" "embeddings" --project src/UI.API
 dotnet user-secrets set "RAGSearch:Endpoint" "https://<resource>.search.windows.net" --project src/UI.API
+dotnet user-secrets set "AzureStorage:AccountName" "<storage-account-name>" --project src/UI.API
 
-# Run — EF Core migrations apply automatically on startup
+# Run - EF Core migrations apply automatically on startup
 dotnet run --project src/UI.API/UI.API.csproj
 ```
 
