@@ -8,12 +8,14 @@ AgenticNET is an open-source, Azure-native platform for building, deploying and 
 
 ---
 
+## Why AgenticNET?
+
 Building an enterprise AI application requires much more than calling a model.
 
 You need:
 
 - AI orchestration
-- Retrieval
+- Retrieval (RAG)
 - Security
 - Identity
 - Observability
