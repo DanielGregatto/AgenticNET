@@ -230,6 +230,20 @@ Once deployed, a seed user is available in the `dev` environment to start callin
 
 Use `POST /api/v1/auth/login` with these credentials to obtain a JWT, then pass it as `Authorization: Bearer <token>` on subsequent requests.
 
+**Production:** no seed user is created. Users register via `POST /api/v1/auth/register`, which sends an email confirmation token before the account becomes active. For this to work, configure the `EmailConfig` section in `appsettings.Production.json` (or via Container App environment variables) with your SMTP provider before going live:
+
+```json
+"EmailConfig": {
+  "Host": "smtp.your-provider.com",
+  "SmtpPort": 587,
+  "Email": "noreply@your-domain.com",
+  "Password": "<smtp-password>",
+  "Name": "Your App Name",
+  "UseSSL": true,
+  "MainUrl": "https://your-prod-frontend-url.com/"
+}
+```
+
 > To tear everything down, set `destroy_environment = true` in `platform/cloud/tvars/terraform-dev.tfvars` and push. The pipeline destroys all resources and skips deployment.
 
 > **Cost tip:** Azure AI Search carries a fixed monthly cost regardless of usage. To keep things near-free, I recommend running only the `dev` environment. The `prod` pipeline is available for when you are ready to go live.
