@@ -26,11 +26,19 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Sends a message to the router, which classifies the intent and delegates to the most appropriate specialist agent.
-        /// Supply the same ConversationId across requests to continue a conversation.
-        /// Omit ConversationId to start a new conversation (a new ID is generated and returned).
-        /// Set CanUseDefaultAgent to false to receive an error instead of a fallback when routing fails.
+        /// Send a message and let the router pick the best agent.
         /// </summary>
+        /// <remarks>
+        /// The RouterAgent classifies the message intent and dispatches to the matching specialist
+        /// (GeneralAdvisor, ProductCatalog, SupplierAdvisor, ...).
+        ///
+        /// - Omit `conversationId` to start a new conversation; the generated ID is returned and should
+        ///   be echoed on subsequent requests to maintain history.
+        /// - Set `canUseDefaultAgent: false` to receive a 400 error instead of falling back to the
+        ///   default agent when no specialist matches.
+        /// - Set `includeTrace: true` to receive the full decision trail (router choice, plugin calls,
+        ///   reviewer score) in the `trace` array of the response.
+        /// </remarks>
         [HttpPost("v1/chat")]
         [Authorize]
         [ProducesResponseType(typeof(SuccessResponse<AgentResult>), 200)]
@@ -47,8 +55,13 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Returns the list of agents registered in configuration.
+        /// List all agents registered in configuration.
         /// </summary>
+        /// <remarks>
+        /// Returns name, description, provider, model, and plugins for each agent.
+        /// Useful for discovering which agents are available before calling
+        /// <c>POST /api/v1/agents/{agentName}/messages</c>.
+        /// </remarks>
         [HttpGet("v1/agents")]
         [Authorize]
         [ProducesResponseType(typeof(SuccessResponse<IEnumerable<AgentListItemResult>>), 200)]
@@ -62,11 +75,15 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Sends a message to the specified agent and returns its response.
-        /// Supply the same ConversationId across requests to continue a conversation.
-        /// Omit ConversationId to start a new conversation (a new ID is generated and returned).
+        /// Send a message directly to a named agent, bypassing the router.
         /// </summary>
-        /// <param name="agentName">The name of the agent to address, as declared in configuration.</param>
+        /// <remarks>
+        /// Use this when you already know which specialist should handle the request.
+        /// Returns 404 if the agent name does not match any entry in configuration.
+        /// Conversation history and the `includeTrace` flag work the same way as in
+        /// <c>POST /api/v1/chat</c>.
+        /// </remarks>
+        /// <param name="agentName">Agent name exactly as declared in <c>AgentOrchestration:Agents[].Name</c> in configuration.</param>
         /// <param name="command">Message payload.</param>
         [HttpPost("v1/agents/{agentName}/messages")]
         [Authorize]

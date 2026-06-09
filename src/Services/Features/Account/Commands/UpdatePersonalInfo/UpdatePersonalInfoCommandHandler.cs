@@ -54,7 +54,7 @@ namespace Services.Features.Account.Commands.UpdatePersonalInfo
             // Update user properties
             user.FullName = request.FullName;
             user.PhoneNumber = request.PhoneNumber;
-            user.CPF_CNPJ = request.CPF_CNPJ;
+            user.TaxId = request.TaxId;
             user.DateOfBirth = request.DateOfBirth;
 
             // Update user in database
@@ -72,7 +72,7 @@ namespace Services.Features.Account.Commands.UpdatePersonalInfo
                 Id = UserID,
                 Email = user.Email ?? "",
                 FullName = user.FullName,
-                CPF_CNPJ = user.CPF_CNPJ,
+                TaxId = user.TaxId,
                 DateOfBirth = user.DateOfBirth,
                 PhoneNumber = user.PhoneNumber,
                 Street = user.Street,

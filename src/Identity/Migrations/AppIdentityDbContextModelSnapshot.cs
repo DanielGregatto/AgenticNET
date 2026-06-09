@@ -31,7 +31,7 @@ namespace Identity.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
-                    b.Property<string>("CPF_CNPJ")
+                    b.Property<string>("TaxId")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("City")

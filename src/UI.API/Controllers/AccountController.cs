@@ -11,6 +11,10 @@ using UI.API.Controllers.Base;
 
 namespace UI.API.Controllers
 {
+    /// <summary>
+    /// Authenticated user account management. View and update profile, address, and password.
+    /// All endpoints require a Bearer JWT.
+    /// </summary>
     public class AccountController : CoreController
     {
         private readonly IMediatorHandler _mediator;
@@ -25,12 +29,8 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Retrieves the profile information for the currently authenticated user.
+        /// Get the profile of the currently authenticated user.
         /// </summary>
-        /// <remarks>This endpoint requires authentication. If the user is not authenticated, the request
-        /// will be rejected with a 401 Unauthorized response.</remarks>
-        /// <returns>An <see cref="IActionResult"/> containing a <see cref="SuccessResponse{T}"/> with the user's profile data if
-        /// found; otherwise, an <see cref="ErrorResponseDto"/> indicating the error.</returns>
         [Authorize]
         [HttpGet("v1/account/profile")]
         [ProducesResponseType(typeof(SuccessResponse<ProfileResult>), 200)]
@@ -53,14 +53,9 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Updates the authenticated user's personal information.
+        /// Update the authenticated user's personal details (full name, phone, document number, date of birth).
         /// </summary>
-        /// <remarks>This endpoint allows an authenticated user to update their personal details, such as
-        /// full name, phone number, identification number, and date of birth. The user must be authenticated to access
-        /// this endpoint.</remarks>
-        /// <param name="command">The command containing the updated personal information for the user.</param>
-        /// <returns>A <see cref="SuccessResponse{T}"/> containing the updated profile information if the update is successful;
-        /// otherwise, an <see cref="ErrorResponseDto"/> describing the error.</returns>
+        /// <param name="command">Fields to update.</param>
         [Authorize]
         [HttpPost("v1/account/update-personal-info")]
         [ProducesResponseType(typeof(SuccessResponse<ProfileResult>), 200)]
@@ -83,15 +78,9 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Updates the address information for the authenticated user.
+        /// Update the authenticated user's address.
         /// </summary>
-        /// <remarks>This endpoint requires authentication. The address is updated for the currently
-        /// authenticated user only. If the user is not found or authentication fails, an error response is
-        /// returned.</remarks>
-        /// <param name="command">The command containing the new address details to be applied to the user's profile.</param>
-        /// <returns>An <see cref="IActionResult"/> containing a <see cref="SuccessResponse{T}"/> with the updated <see
-        /// cref="ProfileResult"/> if the operation succeeds; otherwise, an <see cref="ErrorResponseDto"/> describing the
-        /// error.</returns>
+        /// <param name="command">New address details.</param>
         [Authorize]
         [HttpPost("v1/account/update-address")]
         [ProducesResponseType(typeof(SuccessResponse<ProfileResult>), 200)]
@@ -114,15 +103,9 @@ namespace UI.API.Controllers
         }
 
         /// <summary>
-        /// Updates the password for the currently authenticated user.
+        /// Change the authenticated user's password. Current password is required for verification.
         /// </summary>
-        /// <remarks>This endpoint requires authentication. The user must provide their current password
-        /// and a new password. The new password must meet any password policy requirements enforced by the system. If
-        /// the update is successful, a success response is returned; otherwise, an error response is provided with
-        /// details.</remarks>
-        /// <param name="command">The command containing the current password, new password, and confirmation of the new password.</param>
-        /// <returns>An <see cref="IActionResult"/> containing a <see cref="SuccessResponse{T}"/> with a success message if the
-        /// password is updated successfully; otherwise, an <see cref="ErrorResponseDto"/> with error details.</returns>
+        /// <param name="command">Current password, new password, and confirmation.</param>
         [Authorize]
         [HttpPost("v1/account/update-password")]
         [ProducesResponseType(typeof(SuccessResponse<string>), 200)]

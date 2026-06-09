@@ -15,7 +15,7 @@ namespace UI.API.Configurations
                         Title = "AgenticNET API",
                         Version = "v1",
                         Description =
-                            "Multi-agent AI platform built on .NET 8 and Azure.\n\n" +
+                            "AI platform built on .NET 8 and Azure, AgenticNET is an open-source, Azure-native platform for building, deploying and operating enterprise AI applications with .NET. It combines intelligent routing, RAG, reviewer loops, infrastructure automation and full decision traceability into a single production-ready platform.\r\n" +
                             "Messages sent to `POST /api/v1/chat` are classified by a **RouterAgent** and dispatched " +
                             "to the best specialist agent (GeneralAdvisor, ProductCatalog, SupplierAdvisor, ...). " +
                             "Agents can call plugins (RAG over Azure AI Search, product catalog queries) and " +

@@ -22,11 +22,14 @@ namespace Domain.Interfaces
 
         /// <summary>
         /// Classifies the user message using the RouterAgent and returns the resolved specialist agent name.
-        /// The system prompt is built dynamically from all registered non-router agents and their descriptions.
+        /// The system prompt is built dynamically from all registered non-router, non-reviewer agents.
+        /// When canUseDefaultAgent is false, the default agent is also excluded from candidates so it cannot
+        /// be chosen even by a successful router classification.
         /// Returns Failure if the router agent is misconfigured or the classifier returns an unrecognised agent name.
         /// </summary>
         Task<Result<string>> RouteAsync(
             string userMessage,
+            bool canUseDefaultAgent = true,
             CancellationToken cancellationToken = default);
 
         /// <summary>

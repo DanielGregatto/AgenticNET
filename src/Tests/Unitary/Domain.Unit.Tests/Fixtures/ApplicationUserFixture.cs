@@ -16,7 +16,7 @@ public class ApplicationUserFixture
             .RuleFor(u => u.Email, f => f.Internet.Email())
             .RuleFor(u => u.UserName, f => f.Internet.UserName())
             .RuleFor(u => u.FullName, f => f.Name.FullName())
-            .RuleFor(u => u.CPF_CNPJ, f => f.Random.Replace("###########"))
+            .RuleFor(u => u.TaxId, f => f.Random.AlphaNumeric(12))
             .RuleFor(u => u.DateOfBirth, f => f.Date.Past(30, DateTime.Now.AddYears(-18)))
             .RuleFor(u => u.PhoneNumber, f => f.Phone.PhoneNumber())
             .RuleFor(u => u.Street, f => f.Address.StreetAddress())

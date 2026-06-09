@@ -53,7 +53,7 @@ public class AccountCommandFixture
         {
             FullName = _faker.Name.FirstName() + " " + _faker.Name.LastName(), // Must contain space
             PhoneNumber = _faker.Random.Replace("(##) #####-####"), // Valid phone format
-            CPF_CNPJ = _faker.Random.Replace("###########"), // 11 digits for CPF
+            TaxId = _faker.Random.AlphaNumeric(12),
             DateOfBirth = _faker.Date.Past(30, DateTime.Now.AddYears(-18))
         };
     }

@@ -42,9 +42,7 @@ public class UpdatePersonalInfoCommandHandlerTests : IDisposable
         _mockLocalizer.Setup(l => l[It.IsAny<string>()])
             .Returns((string key) => new LocalizedString(key, key));
 
-        // Setup handler validation to return true for valid phone and CPF/CNPJ
         _mockHandlerValidation.Setup(h => h.IsValidPhoneNumber(It.IsAny<string>())).Returns(true);
-        _mockHandlerValidation.Setup(h => h.IsValidCPFOrCNPJ(It.IsAny<string>())).Returns(true);
 
         _validator = new UpdatePersonalInfoCommandValidator(_mockLocalizer.Object, _mockHandlerValidation.Object);
         _commandFixture = new AccountCommandFixture();
@@ -85,7 +83,7 @@ public class UpdatePersonalInfoCommandHandlerTests : IDisposable
         result.Data.Id.Should().Be(userId);
         result.Data.FullName.Should().Be(command.FullName);
         result.Data.PhoneNumber.Should().Be(command.PhoneNumber);
-        result.Data.CPF_CNPJ.Should().Be(command.CPF_CNPJ);
+        result.Data.TaxId.Should().Be(command.TaxId);
         result.Data.DateOfBirth.Should().Be(command.DateOfBirth);
 
         _mockUserManager.Verify(um => um.UpdateAsync(It.IsAny<ApplicationUser>()), Times.Once);
