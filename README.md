@@ -36,6 +36,7 @@ AgenticNET provides these capabilities as a single Azure-native platform.
 - **Azure-Native Infrastructure** - Terraform-managed resources provisioned end-to-end. One script sets up Azure and GitHub. Push to branch, pipeline does the rest.
 - **Enterprise Security** - JWT auth, OAuth2, ASP.NET Core Identity, rate limiting and zero-secret Azure auth via Managed Identity.
 
+
 ---
 
 ## Architecture
