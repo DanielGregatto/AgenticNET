@@ -200,27 +200,84 @@ Content-Type: application/json
 
 For anyone who wants to spin up the full stack on Azure and test via API.
 
-**Prerequisites:** Azure subscription · GitHub account · [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) (`az login`) · [GitHub CLI](https://cli.github.com) (`gh auth login`)
+**Prerequisites:** Azure subscription · GitHub account · [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) · [GitHub CLI](https://cli.github.com) · [Git](https://git-scm.com)
+
+---
+
+#### Step 1 — Fork and clone
+
+Fork the repo on GitHub, then clone your fork locally:
 
 ```powershell
-# 1. One-time setup per environment.
-#    Creates the Azure service principal, OIDC federation, and all GitHub secrets automatically.
-#    No passwords stored anywhere - OIDC only.
-#    The script will ask for a short name suffix (max 6 chars, e.g. "abc123").
-#    This suffix is appended to globally unique Azure resource names (ACR, SQL, OpenAI, Search).
-#    Use the SAME suffix for both environments: TF_BACKEND_SUFFIX is repo-scoped (both environments
-#    share the same Terraform state storage account) and changing it moves Terraform state.
-#    Once set, keep it stable — changing it recreates every suffixed resource.
-powershell -ExecutionPolicy Bypass -File .\platform\scripts\setup-azure.ps1 dev
-powershell -ExecutionPolicy Bypass -File .\platform\scripts\setup-azure.ps1 prod
-
-# 2. Push to the right branch - CI/CD does the rest
-git push origin development   # -> dev environment
-git push origin master        # -> production environment
-
-# 3. Follow the GitHub Actions run in your repository.
-#    When the pipeline finishes, the job summary will show the Container App URL - ready to call.
+git clone https://github.com/<your-username>/AgenticNET.git
+cd AgenticNET
 ```
+
+---
+
+#### Step 2 — Create the development branch
+
+The CI/CD pipeline is wired to the `development` branch. Create it now:
+
+```powershell
+git checkout -b development
+git push origin development
+```
+
+---
+
+#### Step 3 — Log in to Azure and GitHub
+
+```powershell
+az login        # opens browser — select the right account and subscription
+gh auth login   # follow the prompts to authenticate with GitHub
+```
+
+If you have multiple Azure subscriptions, set the correct one explicitly:
+
+```powershell
+az account list --output table                      # find the right subscription
+az account set --subscription "<subscription-id>"
+```
+
+---
+
+#### Step 4 — Run the setup script
+
+This creates the Azure service principal, OIDC federation, and all GitHub secrets automatically. No passwords stored anywhere — OIDC only.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\platform\scripts\setup-azure.ps1 dev
+```
+
+The script will ask for a **name suffix** (max 6 chars, e.g. `abc123`). This is appended to globally unique Azure resource names (ACR, SQL, OpenAI, Search). Use the **same suffix** for both environments and keep it stable — changing it later recreates every suffixed resource.
+
+Run it for production when you are ready:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\platform\scripts\setup-azure.ps1 prod
+```
+
+---
+
+#### Step 5 — Activate GitHub Actions
+
+GitHub **disables workflows on forked repositories by default**. Go to your fork's **Actions** tab and click **"I understand my workflows, go ahead and enable them"**.
+
+Without this step the pipeline will not run when you push.
+
+---
+
+#### Step 6 — Push to trigger the pipeline
+
+```powershell
+git push origin development   # triggers dev pipeline
+git push origin master        # triggers prod pipeline (when ready)
+```
+
+Go to the **Actions** tab in your GitHub repository to follow the run. When the pipeline finishes, the job summary shows the Container App URL — ready to call.
+
+---
 
 The pipeline provisions all Azure resources via Terraform, builds and pushes the Docker image, sets up AI Search indexes for every catalog in `RAGSearch:Catalogs`, and deploys the Container App. **Nothing to install, nothing to configure manually.**
 
